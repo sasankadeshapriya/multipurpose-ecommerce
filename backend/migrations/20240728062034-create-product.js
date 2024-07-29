@@ -58,7 +58,8 @@ module.exports = {
         type: Sequelize.STRING
       },
       digital_type: {
-        type: Sequelize.ENUM
+        type: Sequelize.ENUM,
+        values: ['file', 'link']
       },
       digital_link: {
         type: Sequelize.TEXT

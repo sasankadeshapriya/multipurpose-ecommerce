@@ -18,6 +18,9 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.CompareList); 
       User.hasMany(models.Shipping);
       User.hasOne(models.Billing);     
+
+      User.belongsToMany(models.Role, { through: 'UserRoles' });
+      User.belongsToMany(models.Permission, { through: 'UserPermissions' });
     }
   }
   User.init({
