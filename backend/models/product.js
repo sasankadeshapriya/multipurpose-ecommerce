@@ -30,7 +30,7 @@ module.exports = (sequelize, DataTypes) => {
     image3: DataTypes.STRING,
     image4: DataTypes.STRING,
     image5: DataTypes.STRING,
-    digital_type: DataTypes.ENUM,
+    digital_type: DataTypes.ENUM('file', 'link'),
     digital_link: DataTypes.TEXT,
     digital_file: DataTypes.TEXT,
     license_name: DataTypes.TEXT,
