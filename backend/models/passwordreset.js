@@ -15,7 +15,8 @@ module.exports = (sequelize, DataTypes) => {
   }
   PasswordReset.init({
     email: DataTypes.STRING,
-    token: DataTypes.STRING
+    token: DataTypes.STRING,
+    expiry: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'PasswordReset',
