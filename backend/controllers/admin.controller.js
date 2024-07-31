@@ -114,16 +114,16 @@ function changeAdminPassword(req, res) {
 
   // Validate request
   const schema = {
-    email: { type: "email", max: 255 },
-    oldPassword: { type: "string", min: 6, max: 255 },
-    newPassword: { type: "string", min: 6, max: 255 },
+    email: { type: 'email', max: 255 },
+    oldPassword: { type: 'string', min: 6, max: 255 },
+    newPassword: { type: 'string', min: 6, max: 255 },
   };
 
   const check = v.validate(req.body, schema);
 
   if (check !== true) {
     return res.status(400).send({
-      message: "Validation failed",
+      message: 'Validation failed',
       errors: check,
     });
   }
@@ -134,27 +134,27 @@ function changeAdminPassword(req, res) {
     .then(function (user) {
       if (!user) {
         return res.status(404).send({
-          message: "User not found",
-          errors: [{ field: email, message: "User not found" }],
+          message: 'User not found',
+          errors: [{ field: email, message: 'User not found' }],
         });
       }
 
-      // Check if password is correct
+      // Check if old password is correct
       if (!bcrypt.compareSync(oldPassword, user.password)) {
         return res.status(400).send({
-          message: "Invalid password",
-          errors: [{ field: "password", message: "Invalid password" }],
+          message: 'Invalid password',
+          errors: [{ field: 'password', message: 'Invalid password' }],
         });
       }
 
       // Check if new password is the same as old password
       if (bcrypt.compareSync(newPassword, user.password)) {
         return res.status(400).send({
-          message: "New password cannot be the same as old password",
+          message: 'New password cannot be the same as old password',
           errors: [
             {
-              field: "newPassword",
-              message: "New password cannot be the same as old password",
+              field: 'newPassword',
+              message: 'New password cannot be the same as old password',
             },
           ],
         });
@@ -167,21 +167,29 @@ function changeAdminPassword(req, res) {
       // Update user password
       user
         .update({ password: hashedPassword })
-        .then(function () {
+        .then(async function () {
+          // Send email notification
+          await sendEmail({
+            to: email,
+            subject: 'Password Changed Successfully',
+            text: `Hello,\n\nYour password has been changed successfully.\n\nIf you did not request this change, please contact support immediately.\n\nBest regards,\nYour Company`,
+            html: `<p>Hello,</p><p>Your password has been changed successfully.</p><p>If you did not request this change, please contact support immediately.</p><p>Best regards,<br>Your Company</p>`,
+          });
+
           res.status(200).send({
-            message: "Password changed successfully",
+            message: 'Password changed successfully',
           });
         })
         .catch(function (error) {
           res.status(500).send({
-            message: "Server error",
+            message: 'Server error',
             error: error.message,
           });
         });
     })
     .catch(function (error) {
       return res.status(500).send({
-        message: "Server error",
+        message: 'Server error',
         error: error.message,
       });
     });
