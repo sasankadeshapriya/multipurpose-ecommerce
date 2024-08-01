@@ -1,9 +1,10 @@
-var express = require('express');
-var router = express.Router();
-var adminController = require('../controllers/admin.controller');
+const express = require('express');
+const router = express.Router();
+const adminController = require("../controllers/admin.controller");
 
 router.post('/register-admin', adminController.addAdmin);
 router.patch('/change-password', adminController.changeAdminPassword);
+router.post('/login', adminController.adminLogin);
 
 module.exports = router;
 
