@@ -7,7 +7,8 @@ const {auth} = require("./middleware/auth.middleware");
 const adminRoute = require ('./routes/admin.route');
 const roleRoute = require ('./routes/role.route');
 const permissionRoute = require ('./routes/permission.route');
-const passwordRoute = require ('./routes/password.route');
+const passwordRoute = require('./routes/password.route');
+const userRoute = require('./routes/user.route');
 // const productRoute = require ('./routes/product.route');
 
 
@@ -21,6 +22,7 @@ app.use("/api/su/admin", adminRoute);
 app.use("/api/su/role", roleRoute);
 app.use("/api/su/permission", permissionRoute);
 app.use("/api/password", passwordRoute);
+app.use("/api/user",userRoute);
 // app.use("/api/su/product", auth(), productRoute);
 
 app.get("/", (req, res) => {
