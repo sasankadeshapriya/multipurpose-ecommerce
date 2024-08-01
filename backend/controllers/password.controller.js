@@ -98,6 +98,15 @@ const resetPassword = async (req, res) => {
     // Delete the password reset request
     await PasswordReset.destroy({ where: { token } });
 
+    const emailContent = {
+      to: user.email,
+      subject: 'Password Successfully Changed',
+      text: `Your password has been successfully changed. If you did not make this change, please contact support immediately.`,
+      html: `<p>Your password has been successfully changed.</p><p>If you did not make this change, please contact support immediately.</p>`,
+    };    
+
+    await sendEmail(emailContent);
+
     res.send({ message: 'Password reset successfully' });
   } catch (error) {
     res.status(500).send({ message: 'Server error', error: error.message });
