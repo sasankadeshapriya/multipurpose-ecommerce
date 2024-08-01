@@ -307,8 +307,22 @@ function adminLogin(req, res) {
     });
 }
 
+function adminLogout(req, res) {
+  // Clear the HTTP-only cookie
+  res.clearCookie("authToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", 
+    sameSite: "Strict", 
+  });
+
+  res.status(200).send({
+    message: "Logout successful",
+  });
+}
+
 module.exports = {
   addAdmin: addAdmin,
   changeAdminPassword: changeAdminPassword,
   adminLogin: adminLogin,
+  adminLogout: adminLogout,
 };
