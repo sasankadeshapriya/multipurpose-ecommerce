@@ -1,10 +1,8 @@
-var express = require('express');
-var router = express.Router();
-var roleController = require('../controllers/role.controller');
+const express = require("express");
+const router = express.Router();
+const roleController = require("../controllers/role.controller");
 
 // Route to add a role
-router.post('/add-role', roleController.addRole);
+router.post("/add-role", roleController.addRole);
 
 module.exports = router;
-
-
