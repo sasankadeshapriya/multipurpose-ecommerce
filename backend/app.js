@@ -12,10 +12,16 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(cors());
 
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
+  cookie: {
+    maxAge: parseInt(process.env.COOKIE_EXPIRE, 10),
+    httpOnly: true, 
+    secure: process.env.NODE_ENV === 'production'
+  }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
