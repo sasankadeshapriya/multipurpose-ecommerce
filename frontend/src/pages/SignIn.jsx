@@ -40,6 +40,10 @@ export default function SignIn() {
     window.open(`/api/user/auth/google`, "_self");
   };
 
+  const handleFacebookSignIn = async () => {
+    window.open(`/api/user/auth/facebook`, "_self");
+  };
+
   return (
     <div
       style={{
@@ -114,7 +118,8 @@ export default function SignIn() {
         <br />
 
         <button
-          type="submit"
+          type="button"
+          onClick={handleFacebookSignIn}
           style={{
             padding: "10px",
             fontSize: "16px",
