@@ -148,24 +148,36 @@ function userSignin(req, res) {
 }
 
 function userSignout(req, res) {
-  req.logout(function(err) {
-    if (err) { return next(err); }
+  req.logout(function (err) {
+    if (err) {
+      return res.status(500).send({
+        message: "Failed to log out user",
+        error: err,
+      });
+    }
 
-    res.clearCookie("userAuthToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-    });
-
-    req.session.destroy(function(err) {
+    req.session.destroy(function (err) {
       if (err) {
         return res.status(500).send({
           message: "Failed to destroy the session",
-          error: err
+          error: err,
         });
       }
-      res.status(200).send({
-        message: "User signed out successfully"
+
+      res.clearCookie("connect.sid", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+      });
+
+      res.clearCookie("userAuthToken", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict",
+      });
+
+      return res.status(200).send({
+        message: "User signed out successfully",
       });
     });
   });

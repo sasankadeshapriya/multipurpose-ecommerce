@@ -1,14 +1,43 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function SignIn() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({});
+  const [error, setError] = useState("");
 
-  const handleSubmit = (event) => {
+  const navigate = useNavigate();
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // Handle form submission logic here
-    console.log("Email:", email);
-    console.log("Password:", password);
+
+    console.log(formData);
+
+    // Send the data to the server
+    try {
+      const res = await fetch("/api/user/signin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+        credentials: "include", // This is crucial for cookies to be sent
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "An error occurred. Please try again.");
+      } else {
+        navigate("/home");
+      }
+    } catch (error) {
+      console.error("An error occurred", error);
+      setError("An error occurred. Please try again.");
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    window.open(`/api/user/auth/google`, "_self");
   };
 
   return (
@@ -25,26 +54,35 @@ export default function SignIn() {
         style={{ display: "flex", flexDirection: "column", width: "300px" }}
       >
         <h2>Sign In</h2>
-        <label>
-          Email:
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ marginBottom: "10px", padding: "8px", fontSize: "16px" }}
-          />
-        </label>
-        <label>
-          Password:
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ marginBottom: "20px", padding: "8px", fontSize: "16px" }}
-          />
-        </label>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <label>
+            Email:
+            <input
+              type="email"
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+              required
+              style={{ padding: "8px", fontSize: "16px", width: "100%" }}
+            />
+          </label>
+          <label>
+            Password:
+            <input
+              type="password"
+              onChange={(e) =>
+                setFormData({ ...formData, password: e.target.value })
+              }
+              required
+              style={{ padding: "8px", fontSize: "16px", width: "100%" }}
+            />
+          </label>
+        </div>
+        <br />
+
+        {error && <p style={{ color: "red" }}>{error}</p>}
+        <br />
 
         <button
           type="submit"
@@ -61,7 +99,8 @@ export default function SignIn() {
         <br />
 
         <button
-          type="submit"
+          type="button"
+          onClick={handleGoogleSignIn}
           style={{
             padding: "10px",
             fontSize: "16px",
