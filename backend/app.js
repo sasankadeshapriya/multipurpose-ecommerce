@@ -50,6 +50,14 @@ app.use("/api/password", passwordRoute);
 app.use("/api/user", userRoute);
 // app.use("/api/su/product", auth(), productRoute);
 
+app.get("/unauthorized", (req, res) => {
+  res
+    .status(401)
+    .send(
+      "Unauthorized: No email associated with the Facebook account. Registration cannot proceed."
+    );
+});
+
 app.get("/", (req, res) => {
   res.send("server is ready!");
 });
