@@ -50,6 +50,7 @@ function userSignup(req, res) {
         email: email,
         password: hashedPassword,
         is_admin: false,
+        status: true,
       })
         .then(async function (user) {
           // Send email
@@ -122,6 +123,7 @@ function userSignin(req, res) {
           userId: user.id,
           email: user.email,
           name: user.name,
+          status: user.status
         },
         process.env.JWT_SECRET_KEY,
         { expiresIn: process.env.JWT_EXPIRE }
@@ -183,8 +185,61 @@ function userSignout(req, res) {
   });
 }
 
+function changeStatus(req, res) {
+  const { email, status } = req.body;
+
+  // Validate request
+  const schema = {
+    email: { type: "email", max: 255 },
+    status: { type: "boolean" },
+  };
+
+  const check = v.validate(req.body, schema);
+
+  if (check !== true) {
+    return res.status(400).send({
+      message: "Validation failed",
+      errors: check,
+    });
+  }
+
+  User.findOne({
+    where: { email: email },
+  })
+    .then(function (user) {
+      if (!user) {
+        return res.status(404).send({
+          message: "User not found",
+          errors: [{ field: email, message: "User not found" }],
+        });
+      }
+
+      user
+        .update({ status: status })
+        .then(function () {
+          res.status(200).send({
+            message: "Status updated successfully",
+            status: user.status,
+          });
+        })
+        .catch(function (error) {
+          res.status(500).send({
+            message: "Server error updating status",
+            error: error.message,
+          });
+        });
+    })
+    .catch(function (error) {
+      return res.status(500).send({
+        message: "Server error fetching user",
+        error: error.message,
+      });
+    });
+}
+
 module.exports = {
   userSignup: userSignup,
   userSignin: userSignin,
   userSignout: userSignout,
+  changeStatus:changeStatus
 };
