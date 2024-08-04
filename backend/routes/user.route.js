@@ -24,7 +24,9 @@ router.get(
 
 router.get(
   "/auth/google/redirect",
-  passport.authenticate("google", { failureRedirect: "/login" }),
+  passport.authenticate("google", {
+    failureRedirect: `${process.env.FRONTEND_URL}/unauthorize`,
+  }),
   (req, res) => {
     const token = jwt.sign(
       { userId: req.user.id, email: req.user.email, name: req.user.name },
@@ -37,61 +39,34 @@ router.get(
       sameSite: "Strict",
       maxAge: process.env.COOKIE_EXPIRE,
     });
-    res.redirect("http://localhost:5173/home");
+    res.redirect(`${process.env.FRONTEND_URL}/home`);
   }
 );
 
-// router.get(
-//   "/auth/facebook/redirect",
-//   passport.authenticate("facebook", { failureRedirect: "/login" }),
-//   (req, res) => {
-//     if (!req.user) {
-//       console.log("No user object available after Facebook auth."); // Debug: Log failure
-//       return res.redirect("/manual-email-entry");
-//     }
-//     const token = jwt.sign(
-//       { userId: req.user.id, email: req.user.email, name: req.user.name },
-//       process.env.JWT_SECRET_KEY,
-//       { expiresIn: process.env.JWT_EXPIRE }
-//     );
-//     console.log("Token generated:", token); // Debug: Log the token
-//     res.cookie("userAuthToken", token, {
-//       httpOnly: true,
-//       secure: process.env.NODE_ENV === "production",
-//       sameSite: "Strict",
-//       maxAge: parseInt(process.env.COOKIE_EXPIRE, 10),
-//     });
-//     res.redirect("http://localhost:5173/home");
-//   }
-// );
-
 router.get(
   "/auth/facebook/redirect",
-  passport.authenticate("facebook", { failureRedirect: "/login" }),
+  passport.authenticate("facebook", {
+    failureRedirect: `${process.env.FRONTEND_URL}/unauthorize`,
+  }),
   (req, res) => {
     if (!req.user && req.authInfo && req.authInfo.message === "email_missing") {
-      // Directly redirect to an "Unauthorized" page when no email is available
-      console.log("No email available after Facebook auth."); // Debug: Log specific case
-      return res.redirect("/unauthorized"); // Redirect to a specific unauthorized route
+      return res.redirect(`${process.env.FRONTEND_URL}/unauthorize`);
     } else if (!req.user) {
-      console.log("General authentication failure."); // Debug: Log general failure
-      return res.redirect("/login");
+      return res.redirect(`${process.env.FRONTEND_URL}/unauthorize`);
     }
-
-    // If user is authenticated successfully, proceed with token generation and redirection
     const token = jwt.sign(
       { userId: req.user.id, email: req.user.email, name: req.user.name },
       process.env.JWT_SECRET_KEY,
       { expiresIn: process.env.JWT_EXPIRE }
     );
-    console.log("Token generated:", token); // Debug: Log the token
+    console.log("Token generated:", token);
     res.cookie("userAuthToken", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
       maxAge: parseInt(process.env.COOKIE_EXPIRE, 10),
     });
-    res.redirect("http://localhost:5173/home");
+    res.redirect(`${process.env.FRONTEND_URL}/home`);
   }
 );
 

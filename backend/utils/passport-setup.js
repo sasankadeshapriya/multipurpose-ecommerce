@@ -36,51 +36,13 @@ passport.use(
   )
 );
 
-// passport.use(
-//   new FacebookStrategy(
-//     {
-//       clientID: process.env.FACEBOOK_APP_ID,
-//       clientSecret: process.env.FACEBOOK_APP_SECRET,
-//       callbackURL: "http://localhost:3001/api/user/auth/facebook/redirect",
-//       profileFields: ["id", "displayName", "photos", "emails"],
-//     },
-//     async (accessToken, refreshToken, profile, done) => {
-//       const email = profile.emails && profile.emails[0].value;
-//       if (!email) {
-//         return done(null, false, {
-//           message:
-//             "No email associated with this Facebook account. Please provide an email.",
-//         });
-//       }
-//       try {
-//         let user = await User.findOne({ where: { email } });
-//         if (!user) {
-//           user = await User.create({
-//             name: profile.displayName,
-//             email,
-//             facebook_id: profile.id,
-//             image: profile.photos[0].value,
-//           });
-//         } else {
-//           user.facebook_id = profile.id;
-//           await user.save();
-//         }
-//         done(null, user);
-//       } catch (error) {
-//         console.error("Error in Facebook Strategy:", error);
-//         done(error, null);
-//       }
-//     }
-//   )
-// );
-
 passport.use(
   new FacebookStrategy(
     {
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
       callbackURL: "http://localhost:3001/api/user/auth/facebook/redirect",
-      profileFields: ["id", "displayName", "photos", "emails"], // Requesting emails
+      profileFields: ["id", "displayName", "photos", "emails"],
     },
     async (accessToken, refreshToken, profile, done) => {
       const email =
@@ -88,7 +50,6 @@ passport.use(
           ? profile.emails[0].value
           : null;
       if (!email) {
-        // Return a specific error message via 'done' when email is missing
         return done(null, false, { message: "email_missing" });
       }
       try {
