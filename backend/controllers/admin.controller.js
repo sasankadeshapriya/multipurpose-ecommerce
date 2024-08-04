@@ -1,7 +1,9 @@
 const bcrypt = require("bcrypt");
+const Sequelize = require('sequelize');
 const validator = require("fastest-validator");
 const jwt = require("jsonwebtoken");
 const {
+  sequelize,
   User,
   Role,
   Permission,
@@ -56,6 +58,7 @@ function addAdmin(req, res) {
         email: email,
         password: hashedPassword,
         is_admin: true,
+        status: true,
       })
         .then(async function (user) {
           // Find roles
@@ -282,6 +285,7 @@ function adminLogin(req, res) {
           roles: roles,
           permissions: permissions,
           name: user.name,
+          status: user.status
         },
         process.env.JWT_SECRET_KEY,
         { expiresIn: process.env.JWT_EXPIRE }
@@ -320,9 +324,126 @@ function adminLogout(req, res) {
   });
 }
 
+async function editAdmin(req, res) {
+  const { email, newName, newEmail, newPassword, newRoles = [] } = req.body;
+
+  const schema = {
+    email: { type: "email", max: 255 },
+    newName: { type: "string", min: 3, max: 255, optional: true },
+    newEmail: { type: "email", max: 255, optional: true },
+    newPassword: { type: "string", min: 6, max: 255, optional: true },
+    newRoles: { type: "array", items: "string", min: 1, optional: true },
+  };
+
+  const check = v.validate(req.body, schema);
+
+  if (check !== true) {
+    return res.status(400).send({
+      message: "Validation failed",
+      errors: check,
+    });
+  }
+
+  const transaction = await sequelize.transaction();
+
+  try {
+    // Find the user
+    const user = await User.findOne({ where: { email } }, { transaction });
+    if (!user) {
+      await transaction.rollback();
+      return res.status(404).send({
+        message: "User not found",
+        errors: [{ field: email, message: "User not found" }],
+      });
+    }
+
+    // Check for email uniqueness
+    if (newEmail && newEmail !== email) {
+      const emailExists = await User.findOne({ where: { email: newEmail } }, { transaction });
+      if (emailExists) {
+        await transaction.rollback();
+        return res.status(400).send({
+          message: "Email already exists",
+          errors: [{ field: newEmail, message: "Email is already in use" }],
+        });
+      }
+    }
+
+    // Prepare update data
+    const updateData = {};
+    if (newName && newName !== user.name) {
+      updateData.name = newName;
+    }
+    if (newEmail && newEmail !== user.email) {
+      updateData.email = newEmail;
+    }
+    if (newPassword && newPassword !== "") {
+      const salt = bcrypt.genSaltSync(10);
+      updateData.password = bcrypt.hashSync(newPassword, salt);
+    }
+
+    // Update user information
+    await user.update(updateData, { transaction });
+
+    // Get current roles and permissions
+    const currentRoles = await user.getRoles({ attributes: ['name'], transaction }) || [];
+    const currentRoleNames = currentRoles.map(role => role.name);
+
+    const rolesToAdd = newRoles.filter(role => !currentRoleNames.includes(role));
+    const rolesToRemove = currentRoleNames.filter(role => !newRoles.includes(role));
+
+    // Remove roles and permissions
+    if (rolesToRemove.length > 0) {
+      const rolesToRemoveInstances = await Role.findAll({ where: { name: rolesToRemove }, include: [Permission], transaction }) || [];
+      
+      // Remove roles
+      await user.removeRoles(rolesToRemoveInstances, { transaction });
+      
+      // Remove permissions
+      const permissionsToRemove = rolesToRemoveInstances.flatMap(role => role.Permissions?.map(permission => permission.id) || []);
+      if (permissionsToRemove.length > 0) {
+        await UserPermissions.destroy({ where: { UserId: user.id, PermissionId: { [Sequelize.Op.in]: permissionsToRemove } }, transaction });
+      }
+    }
+
+    // Add new roles and permissions
+    if (rolesToAdd.length > 0) {
+      const rolesToAddInstances = await Role.findAll({ where: { name: rolesToAdd }, include: [Permission], transaction }) || [];
+
+      // Add roles
+      await user.addRoles(rolesToAddInstances, { transaction });
+
+      // Add permissions
+      const permissionsToAdd = rolesToAddInstances.flatMap(role => role.Permissions?.map(permission => ({
+        UserId: user.id,
+        PermissionId: permission.id,
+      })) || []);
+      
+      if (permissionsToAdd.length > 0) {
+        await UserPermissions.bulkCreate(permissionsToAdd, { transaction });
+      }
+    }
+
+    await transaction.commit();
+    res.status(200).send({
+      message: "Admin updated successfully",
+      user: user,
+    });
+  } catch (error) {
+    console.error("Error Details:", error);
+    await transaction.rollback();
+    res.status(500).send({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+}
+
+
 module.exports = {
   addAdmin: addAdmin,
   changeAdminPassword: changeAdminPassword,
   adminLogin: adminLogin,
   adminLogout: adminLogout,
+  editAdmin: editAdmin
 };

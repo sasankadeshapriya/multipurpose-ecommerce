@@ -40,7 +40,7 @@ const roleRoute = require("./routes/role.route");
 const permissionRoute = require("./routes/permission.route");
 const passwordRoute = require("./routes/password.route");
 const userRoute = require("./routes/user.route");
-// const productRoute = require ('./routes/product.route');
+const productRoute = require ('./routes/product.route');
 
 //Routes List
 app.use("/api/su/admin", adminRoute);
@@ -48,7 +48,7 @@ app.use("/api/su/role", roleRoute);
 app.use("/api/su/permission", permissionRoute);
 app.use("/api/password", passwordRoute);
 app.use("/api/user", userRoute);
-// app.use("/api/su/product", auth(), productRoute);
+app.use("/api/product", auth(), productRoute);
 
 app.get("/unauthorized", (req, res) => {
   res

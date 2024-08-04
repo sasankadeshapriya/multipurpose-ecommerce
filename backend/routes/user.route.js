@@ -7,6 +7,7 @@ const userController = require("../controllers/user.controller");
 router.post("/signup", userController.userSignup);
 router.post("/signin", userController.userSignin);
 router.post("/signout", userController.userSignout);
+router.patch("/status",userController.changeStatus);
 
 router.get(
   "/auth/google",

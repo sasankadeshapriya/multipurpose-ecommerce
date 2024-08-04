@@ -21,6 +21,7 @@ passport.use(
             email,
             google_id: profile.id,
             image: profile.photos[0].value,
+            status: true,
           });
         } else {
           // Link Google ID if the user already exists
@@ -60,6 +61,7 @@ passport.use(
             email,
             facebook_id: profile.id,
             image: profile.photos[0].value,
+            status: true,
           });
         } else {
           user.facebook_id = profile.id;

@@ -6,6 +6,7 @@ router.post('/register-admin', adminController.addAdmin);
 router.patch('/change-password', adminController.changeAdminPassword);
 router.post('/login', adminController.adminLogin);
 router.post('/logout',adminController.adminLogout);
+router.patch('/edit-admin',adminController.editAdmin);
 
 module.exports = router;
 
