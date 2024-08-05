@@ -27,7 +27,6 @@ function addAdmin(req, res) {
   };
 
   const check = v.validate(req.body, schema);
-
   if (check !== true) {
     return res.status(400).send({
       message: "Validation failed",
@@ -35,16 +34,26 @@ function addAdmin(req, res) {
     });
   }
 
-  User.findAll({
-    where: { email: email },
-  })
-    .then(function (user) {
-      if (user.length > 0) {
+  // Check if roles exist in the database and include permissions
+  Role.findAll({
+    where: { name: { [Sequelize.Op.in]: roles } },
+    include: [{ model: Permission }]
+  }).then(roleInstances => {
+    if (roleInstances.length !== roles.length) {
+      return res.status(404).send({
+        message: "One or more roles not found",
+      });
+    }
+
+    // Proceed with user creation
+    User.findOne({
+      where: { email: email },
+    })
+    .then(function (existingUser) {
+      if (existingUser) {
         return res.status(400).send({
           message: "User already exists",
-          errors: [
-            { field: email, message: "User with this email already exists" },
-          ],
+          errors: [{ field: 'email', message: "User with this email already exists" }],
         });
       }
 
@@ -60,76 +69,60 @@ function addAdmin(req, res) {
         is_admin: true,
         status: true,
       })
-        .then(async function (user) {
-          // Find roles
-          Role.findAll({
-            where: { name: roles },
-            include: [Permission], // Include permissions related to these roles
-          })
-            .then(async function (roleInstances) {
-              // Add roles to the user
-              await user.addRoles(roleInstances);
+      .then(async function (newUser) {
+        // Add roles to the user
+        await newUser.setRoles(roleInstances);
 
-              // Extract permissions from roles
-              var permissionsToAdd = [];
-              var permissionNames = [];
-              roleInstances.forEach((role) => {
-                role.Permissions.forEach((permission) => {
-                  permissionsToAdd.push({
-                    UserId: user.id,
-                    PermissionId: permission.id,
-                  });
-                  permissionNames.push(permission.name);
-                });
+        // Extract permissions from roles
+        var permissionsToAdd = [];
+        var permissionNames = [];
+        roleInstances.forEach((role) => {
+          if (role.Permissions) {
+            role.Permissions.forEach((permission) => {
+              permissionsToAdd.push({
+                UserId: newUser.id,
+                PermissionId: permission.id,
               });
-
-              // Bulk create user permissions
-              await UserPermissions.bulkCreate(permissionsToAdd);
-
-              // Extract domain name from email
-              const siteName = process.env.SITE_NAME;
-
-              // Send email notification
-              await sendEmail({
-                to: email,
-                subject: "Admin Account Created",
-                text: `Hello ${name},\n\nYou are now an admin on ${siteName}.\n\nYou have been assigned the following roles: ${roles.join(
-                  ", "
-                )}.\nYour permissions include: ${permissionNames.join(
-                  ", "
-                )}.\n\nBest regards,\nYour Company`,
-                html: `<p>Hello ${name},</p><p>You are now an admin on ${siteName}.</p><p>You have been assigned the following roles: ${roles.join(
-                  ", "
-                )}.</p><p>Your permissions include: ${permissionNames.join(
-                  ", "
-                )}.</p><p>Best regards,<br>Your Company</p>`,
-              });
-
-              res.status(201).send({
-                message: "Admin and permissions created successfully!",
-                user: user,
-              });
-            })
-            .catch(function (error) {
-              res.status(500).send({
-                message: "Error assigning roles to admin",
-                error: error.message,
-              });
+              permissionNames.push(permission.name);
             });
-        })
-        .catch(function (error) {
-          res
-            .status(500)
-            .send({ message: "Server error", error: error.message });
+          }
         });
+
+        // Bulk create user permissions
+        await UserPermissions.bulkCreate(permissionsToAdd);
+
+        // Send email notification
+        const siteName = process.env.SITE_NAME;
+        await sendEmail({
+          to: email,
+          subject: "Admin Account Created",
+          text: `Hello ${name}, you are now an admin on ${siteName}. You have the following roles and permissions.`,
+          html: `<p>Hello ${name},</p><p>You are now an admin on ${siteName} with roles: ${roles.join(", ")} and permissions: ${permissionNames.join(", ")}</p>`,
+        });
+
+        res.status(201).send({
+          message: "Admin and permissions created successfully!",
+          user: newUser,
+        });
+      })
+      .catch(function (error) {
+        console.error("Error creating user:", error);
+        res.status(500).send({ message: "Server error", error: error.message });
+      });
     })
     .catch(function (error) {
-      return res.status(500).send({
-        message: "Server error",
-        error: error.message,
-      });
+      console.error("Error checking user existence:", error);
+      res.status(500).send({ message: "Server error", error: error.message });
     });
+  }).catch(error => {
+    console.error("Error fetching roles:", error);
+    res.status(500).send({
+      message: "Server error during role verification",
+      error: error.message,
+    });
+  });
 }
+
 
 function changeAdminPassword(req, res) {
   var { email, oldPassword, newPassword } = req.body;
@@ -438,7 +431,6 @@ async function editAdmin(req, res) {
     });
   }
 }
-
 
 module.exports = {
   addAdmin: addAdmin,
