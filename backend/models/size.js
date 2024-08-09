@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Size extends Model {
     /**
@@ -11,19 +9,38 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       Size.belongsToMany(models.Product, {
-        through: 'SizeProduct',
-        as: 'products',
-        foreignKey: 'size_id',
-        otherKey: 'product_id'
-      });    
+        through: "SizeProduct",
+        as: "products",
+        foreignKey: "size_id",
+        otherKey: "product_id",
+      });
+    }
+
+    static async deleteSize(id) {
+      const size = await Size.findByPk(id);
+      if (!size) {
+        return { status: 404, message: "Size not found" };
+      }
+      await size.destroy();
+      return { status: 200, message: "Size deleted successfully" };
     }
   }
-  Size.init({
-    size: DataTypes.STRING
-  }, {
-    sequelize,
-    modelName: 'Size',
-    paranoid: true,
-  });
+  Size.init(
+    {
+      size: DataTypes.STRING,
+    },
+    {
+      sequelize,
+      modelName: "Size",
+      paranoid: true,
+      hooks: {
+        afterDestroy: async (size, options) => {
+          await sequelize.models.SizeProduct.destroy({
+            where: { size_id: size.id },
+          });
+        },
+      },
+    }
+  );
   return Size;
 };
