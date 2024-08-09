@@ -26,6 +26,21 @@ module.exports = (sequelize, DataTypes) => {
         return false;
       }
     }
+
+    static async changeStatus(id, status) {
+      try {
+        const brand = await Brand.findByPk(id);
+        if (brand) {
+          brand.status = status;
+          await brand.save();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error changing brand status:", error);
+        return false;
+      }
+    }
   }
   Brand.init(
     {
