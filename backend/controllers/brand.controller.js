@@ -127,8 +127,29 @@ async function deleteBrand(req, res) {
   }
 }
 
+async function changeStatus(req, res) {
+  const id = req.params.id;
+  const status = req.body.status;
+
+  if (!id) {
+    return res.status(400).send({ message: "Brand ID is required" });
+  }
+
+  if (status === undefined) {
+    return res.status(400).send({ message: "Status is required" });
+  }
+
+  const result = await Brand.changeStatus(id, status);
+  if (result) {
+    return res.status(200).send({ message: "Brand status updated" });
+  } else {
+    return res.status(404).send({ message: "Brand not found" });
+  }
+}
+
 module.exports = {
   addBrand: addBrand,
   updateBrand: updateBrand,
   deleteBrand: deleteBrand,
+  changeStatus: changeStatus,
 };

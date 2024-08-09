@@ -26,6 +26,21 @@ module.exports = (sequelize, DataTypes) => {
         return false;
       }
     }
+
+    static async changeStatus(id, status) {
+      try {
+        const category = await Category.findByPk(id);
+        if (category) {
+          category.status = status;
+          await category.save();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error changing category status:", error);
+        return false;
+      }
+    }
   }
   Category.init(
     {
