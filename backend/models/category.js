@@ -15,15 +15,19 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
   }
-  Category.init({
-    category_name: DataTypes.STRING,
-    category_slug: DataTypes.STRING,
-    category_icon: DataTypes.STRING,
-    description: DataTypes.STRING,
-    status: DataTypes.INTEGER
-  }, {
-    sequelize,
-    modelName: 'Category',
-  });
+  Category.init(
+    {
+      category_name: DataTypes.STRING,
+      category_slug: DataTypes.STRING,
+      category_icon: DataTypes.STRING,
+      description: DataTypes.STRING,
+      status: DataTypes.INTEGER,
+    },
+    {
+      sequelize,
+      modelName: "Category",
+      paranoid: true,
+    }
+  );
   return Category;
 };

@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Product extends Model {
     /**
@@ -11,49 +9,53 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       Product.belongsTo(models.Brand, {
-        foreignKey: 'brand_id'
+        foreignKey: "brand_id",
       });
       Product.belongsTo(models.Category, {
-        foreignKey: 'category_id'
+        foreignKey: "category_id",
       });
     }
   }
-  Product.init({
-    category_id: DataTypes.BIGINT,
-    brand_id: DataTypes.BIGINT,
-    product_name: DataTypes.STRING,
-    product_slug: DataTypes.STRING,
-    about: DataTypes.TEXT,
-    item_tag: DataTypes.STRING,
-    price: DataTypes.DECIMAL,
-    discount: DataTypes.DECIMAL,
-    discount_price: DataTypes.DECIMAL,
-    quantity: DataTypes.INTEGER,
-    sold: DataTypes.DECIMAL,
-    primary_image: DataTypes.STRING,
-    image2: DataTypes.STRING,
-    image3: DataTypes.STRING,
-    image4: DataTypes.STRING,
-    image5: DataTypes.STRING,
-    digital_type: DataTypes.ENUM('file', 'link'),
-    digital_link: DataTypes.TEXT,
-    digital_file: DataTypes.TEXT,
-    license_name: DataTypes.TEXT,
-    license_key: DataTypes.TEXT,
-    affiliate_link: DataTypes.TEXT,
-    type: DataTypes.INTEGER,
-    featured_product: DataTypes.BOOLEAN,
-    best_selling: DataTypes.BOOLEAN,
-    new_arrival: DataTypes.BOOLEAN,
-    on_sale: DataTypes.BOOLEAN,
-    status: DataTypes.BOOLEAN,
-    description: DataTypes.TEXT,
-    shipping_return: DataTypes.TEXT,
-    additional_nformation: DataTypes.TEXT,
-    voucher: DataTypes.STRING
-  }, {
-    sequelize,
-    modelName: 'Product',
-  });
+  Product.init(
+    {
+      category_id: DataTypes.BIGINT,
+      brand_id: DataTypes.BIGINT,
+      product_name: DataTypes.STRING,
+      product_slug: DataTypes.STRING,
+      about: DataTypes.TEXT,
+      item_tag: DataTypes.STRING,
+      price: DataTypes.DECIMAL,
+      discount: DataTypes.DECIMAL,
+      discount_price: DataTypes.DECIMAL,
+      quantity: DataTypes.INTEGER,
+      sold: DataTypes.DECIMAL,
+      primary_image: DataTypes.STRING,
+      image2: DataTypes.STRING,
+      image3: DataTypes.STRING,
+      image4: DataTypes.STRING,
+      image5: DataTypes.STRING,
+      digital_type: DataTypes.ENUM("file", "link"),
+      digital_link: DataTypes.TEXT,
+      digital_file: DataTypes.TEXT,
+      license_name: DataTypes.TEXT,
+      license_key: DataTypes.TEXT,
+      affiliate_link: DataTypes.TEXT,
+      type: DataTypes.INTEGER,
+      featured_product: DataTypes.BOOLEAN,
+      best_selling: DataTypes.BOOLEAN,
+      new_arrival: DataTypes.BOOLEAN,
+      on_sale: DataTypes.BOOLEAN,
+      status: DataTypes.BOOLEAN,
+      description: DataTypes.TEXT,
+      shipping_return: DataTypes.TEXT,
+      additional_nformation: DataTypes.TEXT,
+      voucher: DataTypes.STRING,
+    },
+    {
+      sequelize,
+      modelName: "Product",
+      paranoid: true,
+    }
+  );
   return Product;
 };
