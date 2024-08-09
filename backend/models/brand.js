@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Brand extends Model {
     /**
@@ -11,18 +9,51 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       Brand.hasMany(models.Product, {
-        foreignKey: 'brand_id'
+        foreignKey: "brand_id",
       });
     }
+
+    static async deleteBrand(id) {
+      try {
+        const brand = await Brand.findByPk(id);
+        if (brand) {
+          await brand.destroy();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error soft deleting brand:", error);
+        return false;
+      }
+    }
+
+    static async changeStatus(id, status) {
+      try {
+        const brand = await Brand.findByPk(id);
+        if (brand) {
+          brand.status = status;
+          await brand.save();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("Error changing brand status:", error);
+        return false;
+      }
+    }
   }
-  Brand.init({
-    brand_name: DataTypes.STRING,
-    brand_slug: DataTypes.STRING,
-    brand_image: DataTypes.STRING,
-    status: DataTypes.STRING
-  }, {
-    sequelize,
-    modelName: 'Brand',
-  });
+  Brand.init(
+    {
+      brand_name: DataTypes.STRING,
+      brand_slug: DataTypes.STRING,
+      brand_image: DataTypes.STRING,
+      status: DataTypes.STRING,
+    },
+    {
+      sequelize,
+      modelName: "Brand",
+      paranoid: true,
+    }
+  );
   return Brand;
 };

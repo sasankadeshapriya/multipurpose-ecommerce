@@ -1,11 +1,19 @@
 const express = require("express");
 const router = express.Router();
-const { addBrand } = require("../controllers/brand.controller");
-const { getUploader } = require('../utils/image-uploader');
+const {
+  addBrand,
+  updateBrand,
+  deleteBrand,
+  changeStatus,
+} = require("../controllers/brand.controller");
+const { getUploader } = require("../utils/image-uploader");
 
 // Middleware for image upload
-const uploadBrandImage = getUploader('brands').single('brand_image');
+const uploadBrandImage = getUploader("brands").single("brand_image");
 
-router.post('/add', uploadBrandImage, addBrand);
+router.post("/add", uploadBrandImage, addBrand);
+router.patch("/update/:id", uploadBrandImage, updateBrand);
+router.delete("/delete/:id", deleteBrand);
+router.patch("/status/:id", changeStatus);
 
 module.exports = router;
