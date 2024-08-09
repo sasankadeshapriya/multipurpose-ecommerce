@@ -7,7 +7,7 @@ function addSize(req, res) {
   var { size_name } = req.body;
 
   const schema = {
-    size_name: { type: "string", min: 1, max: 255 },
+    size_name: { type: "string", min: 1, max: 50 },
   };
 
   const check = v.validate(req.body, schema);
@@ -63,7 +63,7 @@ function updateSize(req, res) {
   const { size_name } = req.body;
 
   const schema = {
-    size_name: { type: "string", min: 1, max: 255 },
+    size_name: { type: "string", min: 1, max: 50 },
   };
 
   const check = v.validate(req.body, schema);
