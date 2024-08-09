@@ -45,6 +45,7 @@ const productRoute = require("./routes/product.route");
 const brandRoutes = require("./routes/brand.route");
 const categoryRoutes = require("./routes/category.route");
 const sizeRoutes = require("./routes/size.route");
+const colorRoutes = require('./routes/color.route');
 
 //Routes List
 app.use("/api/images", imageRoute);
@@ -54,6 +55,7 @@ app.use("/api/su/permission", permissionRoute);
 app.use("/api/su/brand", brandRoutes);
 app.use("/api/su/category", categoryRoutes);
 app.use("/api/su/size", sizeRoutes);
+app.use('/api/su/color', colorRoutes);
 
 app.use("/api/password", passwordRoute);
 app.use("/api/user", userRoute);
