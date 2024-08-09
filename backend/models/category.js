@@ -13,16 +13,36 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
-    static async deleteCategory(id) {
+    static async deleteCategory(id, transaction) {
       try {
-        const category = await Category.findByPk(id);
+        // Find the 'Uncategorized' category to reassign products to
+        const uncategorized = await Category.findOne({
+          where: { category_slug: 'uncategorized' },
+          transaction
+        });
+        if (!uncategorized) {
+          console.error("Uncategorized category not found");
+          return false; // If no uncategorized category is found, return false
+        }
+    
+        // Find and check if the category exists
+        const category = await Category.findByPk(id, { transaction });
         if (category) {
-          await category.destroy();
+          // Update the category_id for all products linked to this category
+          await sequelize.models.Product.update(
+            { category_id: uncategorized.id },
+            { where: { category_id: id }, transaction }
+          );
+    
+          // Delete the category if it's not the uncategorized one
+          if (id !== uncategorized.id) {
+            await category.destroy({ transaction });
+          }
           return true;
         }
         return false;
       } catch (error) {
-        console.error("Error soft deleting category:", error);
+        console.error("Error in deleting category and updating products:", error);
         return false;
       }
     }

@@ -1,4 +1,4 @@
-const { Category } = require("../models");
+const { Category, sequelize } = require("../models");
 const validator = require("fastest-validator");
 
 const v = new validator();
@@ -133,16 +133,23 @@ async function updateCategory(req, res) {
 
 async function deleteCategory(req, res) {
   const id = req.params.id;
-
   if (!id) {
     return res.status(400).send({ message: "Category ID is required" });
   }
 
-  const result = await Category.deleteCategory(id);
-  if (result) {
-    return res.status(200).send({ message: "Category deleted successfully" });
-  } else {
-    return res.status(404).send({ message: "Category not found" });
+  const transaction = await sequelize.transaction();
+  try {
+    const result = await Category.deleteCategory(id, transaction);
+    if (result) {
+      await transaction.commit();
+      return res.status(200).send({ message: "Category deleted successfully" });
+    } else {
+      await transaction.rollback();
+      return res.status(404).send({ message: "Category not found or Uncategorized not set up" });
+    }
+  } catch (error) {
+    await transaction.rollback();
+    return res.status(500).send({ message: "Internal server error", error: error.message });
   }
 }
 
