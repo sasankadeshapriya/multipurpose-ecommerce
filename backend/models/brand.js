@@ -14,15 +14,44 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     static async deleteBrand(id) {
+      const transaction = await sequelize.transaction();
       try {
-        const brand = await Brand.findByPk(id);
-        if (brand) {
-          await brand.destroy();
-          return true;
+        // First, find the 'unbranded' brand ID to use for reassignment
+        const unbranded = await Brand.findOne({
+          where: { brand_slug: "unbranded" },
+          transaction
+        });
+        if (!unbranded) {
+          console.error("Unbranded brand not found");
+          await transaction.rollback();
+          return false;
         }
-        return false;
+    
+        // Check if the brand exists before trying to delete
+        const brand = await Brand.findByPk(id, { transaction });
+        if (!brand) {
+          console.error("Brand not found");
+          await transaction.rollback();
+          return false;
+        }
+    
+        // Update the brand_id of all products linked to this brand
+        await sequelize.models.Product.update(
+          { brand_id: unbranded.id },
+          { where: { brand_id: id }, transaction }
+        );
+    
+        // If the brand to be deleted is not 'unbranded', proceed to delete
+        if (id !== unbranded.id) {
+          await brand.destroy({ transaction });
+        }
+    
+        // Commit the transaction
+        await transaction.commit();
+        return true;
       } catch (error) {
-        console.error("Error soft deleting brand:", error);
+        console.error("Error in deleting brand and updating products:", error);
+        await transaction.rollback();
         return false;
       }
     }
