@@ -15,7 +15,6 @@ module.exports = (sequelize, DataTypes) => {
 
     static async deleteCategory(id, transaction) {
       try {
-        // Find the 'Uncategorized' category to reassign products to
         const uncategorized = await Category.findOne({
           where: { category_slug: 'uncategorized' },
           transaction
@@ -25,7 +24,6 @@ module.exports = (sequelize, DataTypes) => {
           return false; // If no uncategorized category is found, return false
         }
     
-        // Find and check if the category exists
         const category = await Category.findByPk(id, { transaction });
         if (category) {
           // Update the category_id for all products linked to this category
@@ -34,7 +32,6 @@ module.exports = (sequelize, DataTypes) => {
             { where: { category_id: id }, transaction }
           );
     
-          // Delete the category if it's not the uncategorized one
           if (id !== uncategorized.id) {
             await category.destroy({ transaction });
           }
@@ -42,7 +39,6 @@ module.exports = (sequelize, DataTypes) => {
         }
         return false;
       } catch (error) {
-        console.error("Error in deleting category and updating products:", error);
         return false;
       }
     }
@@ -57,7 +53,6 @@ module.exports = (sequelize, DataTypes) => {
         }
         return false;
       } catch (error) {
-        console.error("Error changing category status:", error);
         return false;
       }
     }
