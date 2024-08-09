@@ -43,6 +43,7 @@ const passwordRoute = require("./routes/password.route");
 const userRoute = require("./routes/user.route");
 const productRoute = require ('./routes/product.route');
 const brandRoutes = require('./routes/brand.route');
+const categoryRoutes = require('./routes/category.route');
 
 //Routes List
 app.use('/api/images', imageRoute);
@@ -50,6 +51,7 @@ app.use("/api/su/admin", adminRoute);
 app.use("/api/su/role", roleRoute);
 app.use("/api/su/permission", permissionRoute);
 app.use('/api/su/brand', brandRoutes);
+app.use('/api/su/category', categoryRoutes);
 
 
 app.use("/api/password", passwordRoute);
