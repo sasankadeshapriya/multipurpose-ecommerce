@@ -66,7 +66,6 @@ module.exports = (sequelize, DataTypes) => {
         }
         return false;
       } catch (error) {
-        console.error("Error changing brand status:", error);
         return false;
       }
     }

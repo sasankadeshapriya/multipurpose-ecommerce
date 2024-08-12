@@ -17,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
         otherKey: 'product_id'
       });
     }
+
   }
   Color.init({
     name: DataTypes.STRING,
@@ -25,6 +26,15 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Color',
     paranoid: true,
+    hooks: {
+      beforeDestroy: async (color, options) => {
+        // Delete related entries from ColorProduct table
+        await sequelize.models.ColorProduct.destroy({
+          where: { color_id: color.id },
+          transaction: options.transaction 
+        });
+      }
+    }
   });
   return Color;
 };
