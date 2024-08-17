@@ -1,8 +1,12 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const productController = require("../controllers/product.controller");
+const { physicalProductAdd } = require('../controllers/product.controller');
+const { getUploader } = require('../utils/image-uploader');
 
-// Route to add a role
-router.get("/test", productController.test);
+// Middleware for image upload specific to product images
+const uploadProductImage = getUploader("products").single("image");
+
+// Route to add a new physical product
+router.post('/add-physical-product', uploadProductImage, physicalProductAdd);
 
 module.exports = router;

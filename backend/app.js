@@ -67,7 +67,7 @@ app.use('/api/su/coupon', couponRoutes);
 
 app.use("/api/password", passwordRoute);
 app.use("/api/user", userRoute);
-app.use("/api/product", auth(), productRoute);
+app.use("/api/product", productRoute);
 
 app.get("/unauthorized", (req, res) => {
   res
