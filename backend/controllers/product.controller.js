@@ -1,9 +1,14 @@
-function test(req,res){
-    return res.status(201).send({
-        message: "Hii!"
-      });
+
+
+function addProduct(req, res) {
+
+   return res.status(200).json({
+        message: "Product added successfully!",
+        filename: req.file.filename
+    });
+
 }
 
 module.exports = {
-    test:test
+    addProduct:addProduct
 };

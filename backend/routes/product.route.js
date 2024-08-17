@@ -3,6 +3,6 @@ const router = express.Router();
 const productController = require("../controllers/product.controller");
 
 // Route to add a role
-router.get("/test", productController.test);
+router.get("/test", productController.addProduct);
 
 module.exports = router;
