@@ -49,10 +49,12 @@ const productTagListRoutes = require("./routes/producttaglist.route");
 const itemTagRoutes = require("./routes/itemtag.route");
 const colorRoutes = require('./routes/color.route');
 const couponRoutes = require('./routes/coupon.route');
+const fileRoute = require('./routes/file.route');
 
 
 //Routes List
 app.use("/api/images", imageRoute);
+app.use("/api/file", fileRoute);
 app.use("/api/su/admin", adminRoute);
 app.use("/api/su/role", roleRoute);
 app.use("/api/su/permission", permissionRoute);

@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
       modelName: "Size",
       paranoid: true,
       hooks: {
-        afterDestroy: async (size, options) => {
+        beforeDestroy: async (size, options) => {
           await sequelize.models.SizeProduct.destroy({
             where: { size_id: size.id },
           });
