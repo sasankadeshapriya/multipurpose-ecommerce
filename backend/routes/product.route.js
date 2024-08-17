@@ -9,4 +9,5 @@ const uploadProductImage = getUploader("products").single("image");
 // Route to add a new physical product
 router.post('/add-physical-product', uploadProductImage, physicalProductAdd);
 
+
 module.exports = router;
