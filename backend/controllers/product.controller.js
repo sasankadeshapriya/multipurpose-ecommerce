@@ -12,6 +12,9 @@ const {
 const { getUploader } = require("../utils/image-uploader");
 const Validator = require("fastest-validator");
 
+// Configure uploader for product images
+const productImageUpload = getUploader("products").array("images", 6);
+
 const v = new Validator();
 
 const productSchema = {
@@ -111,118 +114,140 @@ const physicalProductAdd = async (req, res) => {
 };
 
 const digitalProductAdd = async (req, res) => {
-  const transaction = await sequelize.transaction();
+  // Handle file upload first
+  productImageUpload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || "Error uploading files",
+      });
+    }
 
-  try {
-    const {
-      category_id,
-      brand_id,
-      product_name,
-      about,
-      item_tag,
-      price,
-      discount = 0,
-      digital_type, // 'file' or 'link'
-      digital_link,
-      digital_file,
-      license_name,
-      license_key,
-      description,
-      colors,
-      sizes,
-      tags,
-      featured_product = false,
-      best_selling = false,
-      new_arrival = false,
-      on_sale = false,
-      status = true,
-    } = req.body;
+    const transaction = await sequelize.transaction();
 
-    // Calculate discount price if discount is provided
-    const discount_price =
-      discount > 0 ? price - price * (discount / 100) : price;
-
-    // Generate product slug from name
-    const product_slug = product_name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-
-    // Create the digital product
-    const product = await Product.create(
-      {
+    try {
+      const {
         category_id,
         brand_id,
         product_name,
-        product_slug,
         about,
         item_tag,
         price,
-        discount,
-        discount_price,
-        quantity: 999999, // Digital products have unlimited quantity
-        sold: 0,
+        discount = 0,
         digital_type,
         digital_link,
         digital_file,
         license_name,
         license_key,
-        type: 2, // Assuming 2 represents digital products
-        featured_product,
-        best_selling,
-        new_arrival,
-        on_sale,
-        status,
         description,
-      },
-      { transaction }
-    );
+        tags,
+        featured_product = false,
+        best_selling = false,
+        new_arrival = false,
+        on_sale = false,
+        status = true,
+      } = req.body;
 
-    // Add product tags if provided
-    if (tags && tags.length > 0) {
-      await Promise.all(
-        tags.map((tag) =>
-          ProductTag.create(
-            {
-              product_id: product.id,
-              tag,
-            },
-            { transaction }
-          )
-        )
+      // Handle uploaded images
+      const uploadedFiles = req.files || [];
+      const imageFields = [
+        "primary_image",
+        "image2",
+        "image3",
+        "image4",
+        "image5",
+      ];
+      const images = {};
+
+      // Assign uploaded images to their respective fields
+      uploadedFiles.forEach((file, index) => {
+        images[imageFields[index]] = file.filename;
+      });
+
+      // Calculate discount price
+      const discount_price =
+        discount > 0 ? price - price * (discount / 100) : price;
+
+      const product_slug = product_name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      // Create the digital product
+      const product = await Product.create(
+        {
+          category_id,
+          brand_id,
+          product_name,
+          product_slug,
+          about,
+          item_tag,
+          price,
+          discount,
+          discount_price,
+          quantity: 999999,
+          sold: 0,
+          digital_type,
+          digital_link,
+          digital_file,
+          license_name,
+          license_key,
+          type: 2,
+          featured_product,
+          best_selling,
+          new_arrival,
+          on_sale,
+          status,
+          description,
+          ...images,
+        },
+        { transaction }
       );
-    }
 
-    // Commit the transaction
-    await transaction.commit();
+      // Add product tags if provided
+      if (tags) {
+        // Handle tags whether they come as array or single value
+        const tagArray = Array.isArray(tags) ? tags : [tags];
+        await Promise.all(
+          tagArray.map((tag) =>
+            ProductTag.create(
+              {
+                product_id: product.id,
+                tag,
+              },
+              { transaction }
+            )
+          )
+        );
+      }
 
-    return res.status(201).json({
-      success: true,
-      message: "Digital product created successfully",
-      data: product,
-    });
-  } catch (error) {
-    // Rollback transaction on error
-    await transaction.rollback();
+      await transaction.commit();
 
-    // Handle specific errors
-    if (error.name === "SequelizeValidationError") {
-      return res.status(400).json({
+      return res.status(201).json({
+        success: true,
+        message: "Digital product created successfully",
+        data: product,
+      });
+    } catch (error) {
+      await transaction.rollback();
+
+      if (error.name === "SequelizeValidationError") {
+        return res.status(400).json({
+          success: false,
+          message: "Validation error",
+          errors: error.errors.map((e) => e.message),
+        });
+      }
+
+      console.error("Error in digitalProductAdd:", error);
+
+      return res.status(500).json({
         success: false,
-        message: "Validation error",
-        errors: error.errors.map((e) => e.message),
+        message: "Error creating digital product",
+        error: error.message,
       });
     }
-
-    // Log the error for debugging
-    console.error("Error in digitalProductAdd:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Error creating digital product",
-      error: error.message,
-    });
-  }
+  });
 };
 
 const handleColors = async (colorIds, productId, transaction) => {
