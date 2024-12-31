@@ -1,13 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { physicalProductAdd } = require('../controllers/product.controller');
-const { getUploader } = require('../utils/image-uploader');
+const productController = require("../controllers/product.controller");
 
-// Middleware for image upload specific to product images
-const uploadProductImage = getUploader("products").single("image");
-
-// Route to add a new physical product
-router.post('/add-physical-product', uploadProductImage, physicalProductAdd);
-
+router.post('/add-physical-product', productController.insertPhysicalProduct);
 
 module.exports = router;

@@ -31,7 +31,5 @@ const getUploader = (folder) => multer({
 });
 
 module.exports = {
-    getUploader:getUploader
+    getUploader
 };
-
-
