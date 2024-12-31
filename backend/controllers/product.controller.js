@@ -1,14 +1,3 @@
-<<<<<<< Updated upstream
-function test(req,res){
-    return res.status(201).send({
-        message: "Hii!"
-      });
-}
-
-module.exports = {
-    test:test
-};
-=======
 const { getUploader } = require('../utils/muliple-image-uploader');
 const Validator = require('fastest-validator');
 const { Product, Size, Color, SizeProduct, ColorProduct, ProductTag, ProductTagList, Brand, Category } = require('../models');
@@ -241,4 +230,3 @@ async function insertPhysicalProduct(req, res) {
 }
 
 module.exports = { insertPhysicalProduct };
->>>>>>> Stashed changes
