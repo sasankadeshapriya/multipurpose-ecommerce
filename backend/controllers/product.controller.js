@@ -253,6 +253,127 @@ async function insertPhysicalProduct(req, res) {
   });
 }
 
+async function getPhysicalProductWithDetails(req, res) {
+    const productId = parseInt(req.params.id, 10);
+
+    if (isNaN(productId)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid product ID.",
+        });
+    }
+
+    try {
+        // Find product by ID with all related associations
+        const product = await Product.findByPk(productId, {
+            include: [
+                {
+                    model: Brand,
+                    attributes: ['id', 'brand_slug', 'brand_image'], // Include existing Brand attributes
+                },
+                {
+                    model: Category,
+                    attributes: ['id', 'category_name', 'category_slug'], // Match defined Category attributes
+                },
+                {
+                    model: Size,
+                    through: { attributes: [] }, // Exclude join table attributes
+                    as: 'sizes', // Use alias defined in association
+                    attributes: ['id', 'size'], // Match defined Size attributes
+                },
+                {
+                    model: Color,
+                    through: { attributes: [] }, // Exclude join table attributes
+                    as: 'colors', // Use alias defined in association
+                    attributes: ['id', 'name', 'color_code'], // Match defined Color attributes
+                },
+                {
+                    model: ProductTag, // Now ProductTag is associated with Product
+                    attributes: ['id', 'tag'], // Include ProductTag attributes
+                },
+            ],
+        });
+
+        // If product is not found
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product not found.",
+            });
+        }
+
+        // Return the product data with ProductTag details
+        return res.status(200).json({
+            success: true,
+            message: "Product retrieved successfully.",
+            product,
+        });
+    } catch (error) {
+        console.error("Error retrieving product:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error retrieving product.",
+            error: error.message || "An unexpected error occurred.",
+        });
+    }
+}
+
+async function getAllPhysicalProducts(req, res) {
+    try {
+        // Find all products with all related associations
+        const products = await Product.findAll({
+            include: [
+                {
+                    model: Brand,
+                    attributes: ['id', 'brand_slug', 'brand_image'], // Include existing Brand attributes
+                },
+                {
+                    model: Category,
+                    attributes: ['id', 'category_name', 'category_slug'], // Match defined Category attributes
+                },
+                {
+                    model: Size,
+                    through: { attributes: [] }, // Exclude join table attributes
+                    as: 'sizes', // Use alias defined in association
+                    attributes: ['id', 'size'], // Match defined Size attributes
+                },
+                {
+                    model: Color,
+                    through: { attributes: [] }, // Exclude join table attributes
+                    as: 'colors', // Use alias defined in association
+                    attributes: ['id', 'name', 'color_code'], // Match defined Color attributes
+                },
+                {
+                    model: ProductTag, // Now ProductTag is associated with Product
+                    attributes: ['id', 'tag'], // Include ProductTag attributes
+                },
+            ],
+        });
+
+        // If no products found
+        if (products.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No products found.",
+            });
+        }
+
+        // Return all products data with their associated details
+        return res.status(200).json({
+            success: true,
+            message: "Products retrieved successfully.",
+            products,
+        });
+    } catch (error) {
+        console.error("Error retrieving products:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error retrieving products.",
+            error: error.message || "An unexpected error occurred.",
+        });
+    }
+}
+
 async function insertDigitalProduct(req, res) {
   // Handle file upload
   upload(req, res, async function (err) {
@@ -413,7 +534,10 @@ async function insertDigitalProduct(req, res) {
   });
 }
 
-module.exports = {
-  insertPhysicalProduct: insertPhysicalProduct,
-  insertDigitalProduct: insertDigitalProduct,
+
+module.exports = { 
+    insertPhysicalProduct, 
+    getPhysicalProductWithDetails,
+    getAllPhysicalProducts,
+    insertDigitalProduct
 };
