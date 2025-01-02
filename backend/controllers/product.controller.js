@@ -534,10 +534,57 @@ async function insertDigitalProduct(req, res) {
   });
 }
 
+async function deletePhysicalProduct(req, res) {
+  const productId = parseInt(req.params.id, 10);
+
+  if (isNaN(productId)) {
+      return res.status(400).json({
+          success: false,
+          message: "Invalid product ID.",
+      });
+  }
+
+  try {
+      // Check if the product exists
+      const product = await Product.findByPk(productId);
+      if (!product) {
+          return res.status(404).json({
+              success: false,
+              message: "Product not found.",
+          });
+      }
+
+      // Delete related records in SizeProduct
+      await SizeProduct.destroy({ where: { product_id: productId } });
+
+      // Delete related records in ColorProduct
+      await ColorProduct.destroy({ where: { product_id: productId } });
+
+      // Delete related records in ProductTag
+      await ProductTag.destroy({ where: { product_id: productId } });
+
+      // Finally, delete the product itself
+      await Product.destroy({ where: { id: productId } });
+
+      return res.status(200).json({
+          success: true,
+          message: "Product and its related data deleted successfully.",
+      });
+  } catch (error) {
+      console.error("Error deleting product:", error);
+      return res.status(500).json({
+          success: false,
+          message: "Error deleting product.",
+          error: error.message || "An unexpected error occurred.",
+      });
+  }
+}
+
 
 module.exports = { 
     insertPhysicalProduct, 
     getPhysicalProductWithDetails,
     getAllPhysicalProducts,
-    insertDigitalProduct
+    insertDigitalProduct,
+    deletePhysicalProduct
 };
