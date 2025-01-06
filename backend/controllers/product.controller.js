@@ -12,6 +12,7 @@ const {
   Brand,
   Category,
 } = require("../models");
+const { where } = require("sequelize");
 
 // Initialize Fastest Validator
 const v = new Validator();
@@ -60,6 +61,7 @@ const upload = getUploader("products").fields([
   { name: "image5", maxCount: 1 },
 ]);
 
+// Physical product controllers
 async function insertPhysicalProduct(req, res) {
   // Handle file upload
   upload(req, res, async function (err) {
@@ -374,6 +376,53 @@ async function getAllPhysicalProducts(req, res) {
   }
 }
 
+async function deletePhysicalProduct(req, res) {
+  const productId = parseInt(req.params.id, 10);
+
+  if (isNaN(productId)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid product ID.",
+    });
+  }
+
+  try {
+    // Check if the product exists
+    const product = await Product.findByPk(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found.",
+      });
+    }
+
+    // Delete related records in SizeProduct
+    await SizeProduct.destroy({ where: { product_id: productId } });
+
+    // Delete related records in ColorProduct
+    await ColorProduct.destroy({ where: { product_id: productId } });
+
+    // Delete related records in ProductTag
+    await ProductTag.destroy({ where: { product_id: productId } });
+
+    // Finally, delete the product itself
+    await Product.destroy({ where: { id: productId } });
+
+    return res.status(200).json({
+      success: true,
+      message: "Product and its related data deleted successfully.",
+    });
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting product.",
+      error: error.message || "An unexpected error occurred.",
+    });
+  }
+}
+
+// Digital products controllers
 async function insertDigitalProduct(req, res) {
   // Handle file upload
   upload(req, res, async function (err) {
@@ -665,7 +714,7 @@ async function updateDigitalProduct(req, res) {
         best_selling: data.best_selling,
         on_sale: data.on_sale,
         new_arrival: data.new_arrival,
-        type: true, 
+        type: true,
         digital_type: data.digital_type,
         digital_link: data.digital_link,
         digital_file: data.digital_file,
@@ -703,7 +752,7 @@ async function updateDigitalProduct(req, res) {
   });
 }
 
-async function deletePhysicalProduct(req, res) {
+async function deleteDigitalProduct(req, res) {
   const productId = parseInt(req.params.id, 10);
 
   if (isNaN(productId)) {
@@ -714,7 +763,6 @@ async function deletePhysicalProduct(req, res) {
   }
 
   try {
-    // Check if the product exists
     const product = await Product.findByPk(productId);
     if (!product) {
       return res.status(404).json({
@@ -723,27 +771,117 @@ async function deletePhysicalProduct(req, res) {
       });
     }
 
-    // Delete related records in SizeProduct
-    await SizeProduct.destroy({ where: { product_id: productId } });
-
-    // Delete related records in ColorProduct
-    await ColorProduct.destroy({ where: { product_id: productId } });
-
-    // Delete related records in ProductTag
     await ProductTag.destroy({ where: { product_id: productId } });
 
-    // Finally, delete the product itself
     await Product.destroy({ where: { id: productId } });
 
     return res.status(200).json({
       success: true,
-      message: "Product and its related data deleted successfully.",
+      message: "Digital product and its related data deleted successfully.",
     });
   } catch (error) {
-    console.error("Error deleting product:", error);
+    console.error("Error deleting digital product:", error);
     return res.status(500).json({
       success: false,
-      message: "Error deleting product.",
+      message: "Error deleting digital product.",
+      error: error.message || "An unexpected error occurred.",
+    });
+  }
+}
+
+async function getDigitalProductWithDetails(req, res) {
+  const productId = parseInt(req.params.id, 10);
+
+  if (isNaN(productId)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid product ID.",
+    });
+  }
+
+  try {
+    // Find product by ID with all related associations
+    const product = await Product.findByPk(productId, {
+      include: [
+        {
+          model: Brand,
+          attributes: ["id", "brand_slug", "brand_image"], // Include existing Brand attributes
+        },
+        {
+          model: Category,
+          attributes: ["id", "category_name", "category_slug"], // Match defined Category attributes
+        },
+        {
+          model: ProductTag, // Now ProductTag is associated with Product
+          attributes: ["id", "tag"], // Include ProductTag attributes
+        },
+      ],
+    });
+
+    // If product is not found
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found.",
+      });
+    }
+
+    // Return the product data with ProductTag details
+    return res.status(200).json({
+      success: true,
+      message: "Product retrieved successfully.",
+      product,
+    });
+  } catch (error) {
+    console.error("Error retrieving product:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error retrieving product.",
+      error: error.message || "An unexpected error occurred.",
+    });
+  }
+}
+
+async function getAllDigitalProducts(req, res) {
+  try {
+    // Find all products with all related associations
+    const products = await Product.findAll({
+      where: { type: true },
+      include: [
+        {
+          model: Brand,
+          attributes: ["id", "brand_slug", "brand_image"], // Include existing Brand attributes
+        },
+        {
+          model: Category,
+          attributes: ["id", "category_name", "category_slug"], // Match defined Category attributes
+        },
+        {
+          model: ProductTag, // Now ProductTag is associated with Product
+          attributes: ["id", "tag"], // Include ProductTag attributes
+        },
+      ],
+    });
+
+    // If no products found
+    if (products.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No products found.",
+      });
+    }
+
+    // Return all products data with their associated details
+    return res.status(200).json({
+      success: true,
+      message: "Products retrieved successfully.",
+      products,
+    });
+  } catch (error) {
+    console.error("Error retrieving products:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error retrieving products.",
       error: error.message || "An unexpected error occurred.",
     });
   }
@@ -753,7 +891,11 @@ module.exports = {
   insertPhysicalProduct,
   getPhysicalProductWithDetails,
   getAllPhysicalProducts,
+  deletePhysicalProduct,
+
   insertDigitalProduct,
   updateDigitalProduct,
-  deletePhysicalProduct,
+  getDigitalProductWithDetails,
+  getAllDigitalProducts,
+  deleteDigitalProduct,
 };
