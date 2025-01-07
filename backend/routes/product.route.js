@@ -9,5 +9,10 @@ router.delete('/delete-physical-product/:id', productController.deletePhysicalPr
 
 router.post("/add-digital-product", productController.insertDigitalProduct);
 
+<<<<<<< Updated upstream
+=======
+router.patch("/update-physical-product/:id", productController.updatePhysicalProduct);
+router.get("/get-all-product", productController.getAllProducts);
+>>>>>>> Stashed changes
 
 module.exports = router;
