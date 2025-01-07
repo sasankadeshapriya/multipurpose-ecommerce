@@ -1,4 +1,5 @@
 const { getUploader } = require("../utils/muliple-image-uploader");
+const { Op, fn, col, Sequelize } = require('sequelize');
 
 const Validator = require("fastest-validator");
 const {
@@ -11,6 +12,7 @@ const {
   ProductTagList,
   Brand,
   Category,
+  ProductReview,
 } = require("../models");
 const { where } = require("sequelize");
 
@@ -1037,6 +1039,178 @@ async function getAllDigitalProducts(req, res) {
   }
 }
 
+const getAllProducts = async (req, res) => {
+  try {
+    // Extract query parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+    const offset = (page - 1) * limit;
+
+    const filters = {
+      status: 1, // Only active products
+      deletedAt: null, // Exclude soft-deleted products
+    };
+
+    // Extract additional filter parameters from the query
+    if (req.query.search) {
+      filters.product_name = {
+        [Op.like]: `%${req.query.search}%`, // Search by product name
+      };
+    }
+
+    if (req.query.category) {
+      filters.category_id = req.query.category; // Filter by category
+    }
+
+    if (req.query.product_type !== undefined) {
+      filters.type = req.query.product_type === '1' ? 1 : 0; // Filter by product type (0 = physical, 1 = digital)
+    }    
+
+    if (req.query.minPrice && req.query.maxPrice) {
+      filters.price = {
+        [Op.between]: [parseFloat(req.query.minPrice), parseFloat(req.query.maxPrice)],
+      };
+    }
+
+    if (req.query.colors) {
+      filters['$Colors.id$'] = { [Op.in]: req.query.colors.split(',') }; // Filter by colors
+    }
+
+    if (req.query.sizes) {
+      filters['$Sizes.id$'] = { [Op.in]: req.query.sizes.split(',') }; // Filter by sizes
+    }
+
+    if (req.query.brands) {
+      filters.brand_id = { [Op.in]: req.query.brands.split(',') }; // Filter by brands
+    }
+
+    if (req.query.featured_product !== undefined) {
+      filters.featured_product = req.query.featured_product === 'true'; // Filter by featured products
+    }
+
+    if (req.query.best_selling !== undefined) {
+      filters.best_selling = req.query.best_selling === 'true'; // Filter by best selling
+    }
+
+    if (req.query.on_sale !== undefined) {
+      filters.on_sale = req.query.on_sale === 'true'; // Filter by on sale
+    }
+
+    if (req.query.new_arrival !== undefined) {
+      filters.new_arrival = req.query.new_arrival === 'true'; // Filter by new arrival
+    }
+
+    if (req.query.product_type) {
+      filters.type = req.query.product_type; // Filter by product type
+    }
+
+    if (req.query.averageRating) {
+      filters['$ProductReviews.rating$'] = {
+        [Op.gte]: parseFloat(req.query.averageRating), // Filter by average rating
+      };
+    }
+
+    // Get total products count (for pagination)
+    const totalProducts = await Product.count({
+      where: filters,
+      include: [
+        {
+          model: ProductReview,
+          required: false, // Allow products without reviews
+        },
+      ],
+    });
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    // Define sorting based on query
+    let order = [];
+    if (req.query.sortBy) {
+      const sortBy = req.query.sortBy; // e.g., 'price', 'rating'
+      const sortOrder = req.query.sortOrder === 'asc' ? 'ASC' : 'DESC';
+      order.push([sortBy, sortOrder]);
+    }
+
+    // Fetch paginated products with filtering and sorting
+    const products = await Product.findAll({
+      where: filters,
+      include: [
+        {
+          model: Category,
+          attributes: ['id', 'category_name'],
+        },
+        {
+          model: Brand,
+          attributes: ['id', 'brand_name'],
+        },
+        {
+          model: Size,
+          through: { attributes: [] },
+          as: 'sizes',
+          attributes: ['id', 'size'],
+        },
+        {
+          model: Color,
+          through: { attributes: [] },
+          as: 'colors',
+          attributes: ['id', 'name', 'color_code'],
+        },
+        {
+          model: ProductTag,
+          attributes: ['id', 'tag'],
+        },
+        {
+          model: ProductReview,
+          attributes: ['rating'],
+        },
+      ],
+      limit,
+      offset,
+      paranoid: true,
+      order, // Apply sorting
+    });
+
+    // Calculate the average rating for each product
+    products.forEach(product => {
+      const reviews = product.ProductReviews;
+      if (reviews && reviews.length > 0) {
+        const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
+        const averageRating = totalRatings / reviews.length;
+        product.dataValues.averageRating = averageRating.toFixed(1);
+      } else {
+        product.dataValues.averageRating = null;
+      }
+    });
+
+    // If no products found
+    if (products.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No products found.',
+      });
+    }
+
+    // Return paginated products with total count
+    return res.status(200).json({
+      success: true,
+      message: 'Products retrieved successfully.',
+      products,
+      totalProducts,
+      totalPages,
+      currentPage: page,
+    });
+  } catch (error) {
+    console.error('Error retrieving products:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error retrieving products.',
+      error: error.message || 'An unexpected error occurred.',
+    });
+  }
+};
+
+
 module.exports = {
   insertPhysicalProduct,
   getPhysicalProductWithDetails,
@@ -1048,4 +1222,5 @@ module.exports = {
   getDigitalProductWithDetails,
   getAllDigitalProducts,
   deleteDigitalProduct,
+  getAllProducts,
 };

@@ -14,5 +14,6 @@ router.get("/get-digital-product/:id", productController.getDigitalProductWithDe
 router.get("/get-all-digital-product", productController.getAllDigitalProducts);
 
 router.patch("/update-physical-product/:id", productController.updatePhysicalProduct);
+router.get("/get-all-product", productController.getAllProducts);
 
 module.exports = router;
