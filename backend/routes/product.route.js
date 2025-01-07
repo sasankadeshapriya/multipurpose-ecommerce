@@ -22,4 +22,6 @@ router.patch(
   productController.updateDigitalProduct
 );
 
+router.patch("/update-physical-product/:id", productController.updatePhysicalProduct);
+
 module.exports = router;
