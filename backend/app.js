@@ -50,7 +50,7 @@ const itemTagRoutes = require("./routes/itemtag.route");
 const colorRoutes = require('./routes/color.route');
 const couponRoutes = require('./routes/coupon.route');
 const fileRoute = require('./routes/file.route');
-
+const productReviewRoute = require('./routes/productReview.route');
 
 //Routes List
 app.use("/api/images", imageRoute);
@@ -70,6 +70,7 @@ app.use('/api/su/coupon', couponRoutes);
 app.use("/api/password", passwordRoute);
 app.use("/api/user", userRoute);
 app.use("/api/product", productRoute);
+app.use("/api/product-review", productReviewRoute);
 
 app.get("/unauthorized", (req, res) => {
   res
