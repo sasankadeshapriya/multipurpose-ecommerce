@@ -1,4 +1,4 @@
-const { Wishlist } = require("../models");
+const { Wishlist, User, Product } = require("../models");
 const validator = require("fastest-validator");
 
 const v = new validator();
@@ -21,84 +21,66 @@ function addWishlist(req, res) {
     });
   }
 
-  Wishlist.findAll({
+  Wishlist.findOne({
     where: { user_id: user_id, product_id: product_id },
+    attributes: {
+      exclude: ["UserId"], // This excludes the incorrect UserId column from the result
+    },
   })
     .then(function (wishlist) {
-      if (wishlist.length > 0) {
+      if (wishlist) {
         return res.status(400).send({
-          message: "Wishlist already exists",
-          errors: [
-            {
-              field: user_id,
-              message:
-                "Wishlist with this user_id and product_id already exists",
-            },
-          ],
+          message: "Product already in wishlist",
         });
       }
 
-      // Check if user_id exists in the User table
+      // check if user exists
       User.findByPk(user_id)
         .then(function (user) {
           if (!user) {
             return res.status(404).send({
               message: "User not found",
-              errors: [
-                {
-                  field: user_id,
-                  message: "User with this user_id does not exist",
-                },
-              ],
             });
           }
 
-          // Check if product_id exists in the Product table
+          // check if product exists
           Product.findByPk(product_id)
             .then(function (product) {
               if (!product) {
                 return res.status(404).send({
                   message: "Product not found",
-                  errors: [
-                    {
-                      field: product_id,
-                      message: "Product with this product_id does not exist",
-                    },
-                  ],
                 });
               }
 
-              Wishlist.create({ user_id, product_id })
+              Wishlist.create({ user_id: user_id, product_id: product_id })
                 .then(function (wishlist) {
-                  res
-                    .status(201)
-                    .send(wishlist)
-                    .message("Added to wishlist successfully");
+                  res.status(201).send(wishlist);
                 })
                 .catch(function (error) {
                   res.status(500).send({
-                    message: "Error occurred",
+                    message: "Error occurred 3",
                     error: error,
                   });
                 });
             })
             .catch(function (error) {
               res.status(500).send({
-                message: "Error occurred",
+                message: "Error occurred 2",
                 error: error,
               });
             });
         })
         .catch(function (error) {
           res.status(500).send({
-            message: "Error occurred",
+            message: "Error occurred 1",
             error: error,
           });
         });
     })
+
     .catch(function (error) {
       res.status(500).send({
-        message: "Error occurred",
+        message: "Error occurred 4",
         error: error,
       });
     });
@@ -156,7 +138,7 @@ function getWishlistByUser(req, res) {
 
   // Validate request
   const schema = {
-    user_id: { type: "number" },
+    user_id: { type: "string", positive: true, integer: true },
   };
 
   const check = v.validate({ user_id: user_id }, schema);
@@ -168,18 +150,24 @@ function getWishlistByUser(req, res) {
     });
   }
 
+  // Get all details of the wishlist of the user and the product
   Wishlist.findAll({
     where: { user_id: user_id },
     include: [
       {
         model: Product,
-        as: "product",
-        attributes: ["name", "price", "description"],
       },
     ],
+    attributes: {
+      exclude: ["UserId"], // This excludes the incorrect UserId column from the result
+    },
   })
     .then(function (wishlist) {
-      res.status(200).send(wishlist);
+      res.status(200).json({
+        success: true,
+        message: "Wishlist retrieved successfully",
+        wishlist: wishlist,
+      });
     })
     .catch(function (error) {
       res.status(500).send({
