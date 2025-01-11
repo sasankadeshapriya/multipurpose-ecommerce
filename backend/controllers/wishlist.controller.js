@@ -91,7 +91,7 @@ function removeWishlist(req, res) {
 
   // Validate request
   const schema = {
-    id: { type: "number" },
+    id: { type: "string", positive: true, integer: true },
   };
 
   const check = v.validate({ id: id }, schema);
@@ -103,7 +103,11 @@ function removeWishlist(req, res) {
     });
   }
 
-  Wishlist.findByPk(id)
+  Wishlist.findByPk(id, {
+    attributes: {
+      exclude: ["UserId"], // This excludes the incorrect UserId column from the result
+    },
+  })
     .then(function (wishlist) {
       if (!wishlist) {
         return res.status(404).send({
