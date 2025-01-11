@@ -104,4 +104,51 @@ function addWishlist(req, res) {
     });
 }
 
+function removeWishlist(req, res) {
+  const id = req.params.id;
+
+  // Validate request
+  const schema = {
+    id: { type: "number" },
+  };
+
+  const check = v.validate({ id: id }, schema);
+
+  if (check !== true) {
+    return res.status(400).send({
+      message: "Validation failed",
+      errors: check,
+    });
+  }
+
+  Wishlist.findByPk(id)
+    .then(function (wishlist) {
+      if (!wishlist) {
+        return res.status(404).send({
+          message: "Wishlist not found",
+        });
+      }
+
+      wishlist
+        .destroy()
+        .then(function () {
+          res.status(200).send({
+            message: "Removed from wishlist successfully",
+          });
+        })
+        .catch(function (error) {
+          res.status(500).send({
+            message: "Error occurred",
+            error: error,
+          });
+        });
+    })
+    .catch(function (error) {
+      res.status(500).send({
+        message: "Error occurred",
+        error: error,
+      });
+    });
+}
+
 
