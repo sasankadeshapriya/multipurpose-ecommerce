@@ -188,3 +188,9 @@ function getWishlistByUser(req, res) {
       });
     });
 }
+
+module.exports = {
+  addWishlist: addWishlist,
+  removeWishlist: removeWishlist,
+  getWishlistByUser: getWishlistByUser,
+};
