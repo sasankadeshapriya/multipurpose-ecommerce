@@ -151,4 +151,40 @@ function removeWishlist(req, res) {
     });
 }
 
+function getWishlistByUser(req, res) {
+  const user_id = req.params.user_id;
 
+  // Validate request
+  const schema = {
+    user_id: { type: "number" },
+  };
+
+  const check = v.validate({ user_id: user_id }, schema);
+
+  if (check !== true) {
+    return res.status(400).send({
+      message: "Validation failed",
+      errors: check,
+    });
+  }
+
+  Wishlist.findAll({
+    where: { user_id: user_id },
+    include: [
+      {
+        model: Product,
+        as: "product",
+        attributes: ["name", "price", "description"],
+      },
+    ],
+  })
+    .then(function (wishlist) {
+      res.status(200).send(wishlist);
+    })
+    .catch(function (error) {
+      res.status(500).send({
+        message: "Error occurred",
+        error: error,
+      });
+    });
+}
