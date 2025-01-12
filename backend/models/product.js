@@ -15,21 +15,23 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "category_id",
       });
       Product.belongsToMany(models.Size, {
-        through: 'SizeProduct',
-        as: 'sizes',
-        foreignKey: 'product_id',
-        otherKey: 'size_id'
+        through: "SizeProduct",
+        as: "sizes",
+        foreignKey: "product_id",
+        otherKey: "size_id",
       });
       Product.belongsToMany(models.Color, {
-        through: 'ColorProduct',
-        as: 'colors',
-        foreignKey: 'product_id',
-        otherKey: 'color_id'
+        through: "ColorProduct",
+        as: "colors",
+        foreignKey: "product_id",
+        otherKey: "color_id",
       });
-      Product.hasMany(models.ProductTag, { // Add this line
-        foreignKey: 'product_id',
+      Product.hasMany(models.ProductTag, {
+        // Add this line
+        foreignKey: "product_id",
       });
-      Product.hasMany(models.ProductReview, { foreignKey: 'product_id' });
+      Product.hasMany(models.ProductReview, { foreignKey: "product_id" });
+      Product.hasMany(models.Wishlist, { foreignKey: "product_id" });
     }
   }
   Product.init(
