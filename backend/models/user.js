@@ -14,11 +14,19 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.BlogComment);
       User.hasMany(models.Wishlist);
       User.hasMany(models.CompareList);
+<<<<<<< Updated upstream
       User.hasMany(models.Shipping);
       User.hasOne(models.Billing);
 
       User.belongsToMany(models.Role, { through: "UserRoles" });
       User.belongsToMany(models.Permission, { through: "UserPermissions" });
+=======
+
+      User.belongsToMany(models.Role, { through: 'UserRoles' });
+      User.belongsToMany(models.Permission, { through: 'UserPermissions' });
+      User.hasMany(models.Shipping, { foreignKey: 'user_id' });
+      User.hasMany(models.Billing, { foreignKey: 'user_id' });
+>>>>>>> Stashed changes
     }
   }
   User.init(

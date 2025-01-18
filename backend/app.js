@@ -51,7 +51,12 @@ const colorRoutes = require('./routes/color.route');
 const couponRoutes = require('./routes/coupon.route');
 const fileRoute = require('./routes/file.route');
 const productReviewRoute = require('./routes/productReview.route');
+<<<<<<< Updated upstream
 const wishlistRoute = require('./routes/wishlist.route');
+=======
+const shippingRoute = require('./routes/shipping.route');
+const billingRoute = require('./routes/billing.route');
+>>>>>>> Stashed changes
 
 //Routes List
 app.use("/api/images", imageRoute);
@@ -72,7 +77,12 @@ app.use("/api/password", passwordRoute);
 app.use("/api/user", userRoute);
 app.use("/api/product", productRoute);
 app.use("/api/product-review", productReviewRoute);
+<<<<<<< Updated upstream
 app.use("/api/wishlist", wishlistRoute);
+=======
+app.use("/api/shipping", shippingRoute);
+app.use("/api/billing", billingRoute);
+>>>>>>> Stashed changes
 
 app.get("/unauthorized", (req, res) => {
   res
