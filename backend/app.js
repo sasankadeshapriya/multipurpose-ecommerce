@@ -54,8 +54,9 @@ const productReviewRoute = require("./routes/productReview.route");
 const wishlistRoute = require("./routes/wishlist.route");
 const shippingRoute = require("./routes/shipping.route");
 const billingRoute = require("./routes/billing.route");
-const currency = require("./routes/currency.route");
-const order = require("./routes/order.route");
+const currencyRoute = require("./routes/currency.route");
+const orderRoute = require("./routes/order.route");
+const deliveryChargeRoute = require("./routes/deliverycharge.route");
 
 //Routes List
 app.use("/api/images", imageRoute);
@@ -78,8 +79,9 @@ app.use("/api/product-review", productReviewRoute);
 app.use("/api/wishlist", wishlistRoute);
 app.use("/api/shipping", shippingRoute);
 app.use("/api/billing", billingRoute);
-app.use("/api/currency", currency);
-app.use("/api/order", order);
+app.use("/api/currency", currencyRoute);
+app.use("/api/order", orderRoute);
+app.use("/api/delivery-charge", deliveryChargeRoute);
 
 app.get("/unauthorized", (req, res) => {
   res
