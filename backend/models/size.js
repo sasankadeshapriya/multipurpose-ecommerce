@@ -14,6 +14,8 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "size_id",
         otherKey: "product_id",
       });
+
+      Size.hasMany(models.ProductVariant, { foreignKey: 'size_id' });
     }
 
     static async deleteSize(id) {
