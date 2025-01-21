@@ -13,6 +13,7 @@ const {
   Brand,
   Category,
   ProductReview,
+  ProductVariant,
 } = require("../models");
 const { where } = require("sequelize");
 
@@ -45,6 +46,18 @@ const productSchema = {
   new_arrival: { type: "boolean", optional: true },
   product_sizes: { type: "array", items: "number", optional: true },
   product_colors: { type: "array", items: "number", optional: true },
+  variants: { 
+    type: "array", 
+    items: {
+      type: "object", 
+      props: {
+        color_id: { type: "number", optional: true },
+        size_id: { type: "number", optional: true },
+        quantity: { type: "number", positive: true, empty: false },
+      },
+    }, 
+    optional: true,
+  },
   product_tags_data: { type: "array", items: "number", optional: true },
   digital_type: { type: "string", optional: true },
   digital_link: { type: "string", optional: true },
@@ -100,8 +113,9 @@ async function insertPhysicalProduct(req, res) {
     data.best_selling = data.best_selling === "true";
     data.on_sale = data.on_sale === "true";
     data.new_arrival = data.new_arrival === "true";
-    data.product_sizes = JSON.parse(data.product_sizes || "[]");
-    data.product_colors = JSON.parse(data.product_colors || "[]");
+    // data.product_sizes = JSON.parse(data.product_sizes || "[]");
+    // data.product_colors = JSON.parse(data.product_colors || "[]");
+    data.variants = JSON.parse(data.variants || "[]");
     data.product_tags_data = JSON.parse(data.product_tags_data || "[]");
 
     // Validate request body
@@ -138,29 +152,62 @@ async function insertPhysicalProduct(req, res) {
         });
       }
 
-      // Verify product_sizes
-      if (data.product_sizes && data.product_sizes.length > 0) {
-        const sizes = await Size.findAll({ where: { id: data.product_sizes } });
-        if (sizes.length !== data.product_sizes.length) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "Invalid product sizes. Some sizes do not exist in the database.",
-          });
-        }
-      }
+      // // Verify product_sizes
+      // if (data.product_sizes && data.product_sizes.length > 0) {
+      //   const sizes = await Size.findAll({ where: { id: data.product_sizes } });
+      //   if (sizes.length !== data.product_sizes.length) {
+      //     return res.status(400).json({
+      //       success: false,
+      //       message:
+      //         "Invalid product sizes. Some sizes do not exist in the database.",
+      //     });
+      //   }
+      // }
 
-      // Verify product_colors
-      if (data.product_colors && data.product_colors.length > 0) {
-        const colors = await Color.findAll({
-          where: { id: data.product_colors },
-        });
-        if (colors.length !== data.product_colors.length) {
-          return res.status(400).json({
-            success: false,
-            message:
-              "Invalid product colors. Some colors do not exist in the database.",
-          });
+      // // Verify product_colors
+      // if (data.product_colors && data.product_colors.length > 0) {
+      //   const colors = await Color.findAll({
+      //     where: { id: data.product_colors },
+      //   });
+      //   if (colors.length !== data.product_colors.length) {
+      //     return res.status(400).json({
+      //       success: false,
+      //       message:
+      //         "Invalid product colors. Some colors do not exist in the database.",
+      //     });
+      //   }
+      // }
+      // Verify variants (size and color availability)
+
+      if (data.variants && data.variants.length > 0) {
+        const sizeIds = data.variants
+          .filter((variant) => variant.size_id)
+          .map((variant) => variant.size_id);
+
+        const colorIds = data.variants
+          .filter((variant) => variant.color_id)
+          .map((variant) => variant.color_id);
+
+        // Check if all size_ids exist in the Size table
+        if (sizeIds.length > 0) {
+          const sizes = await Size.findAll({ where: { id: sizeIds } });
+          if (sizes.length !== sizeIds.length) {
+            return res.status(400).json({
+              success: false,
+              message: "Invalid size IDs. Some sizes do not exist in the database.",
+            });
+          }
+        }
+
+        // Check if all color_ids exist in the Color table
+        if (colorIds.length > 0) {
+          const colors = await Color.findAll({ where: { id: colorIds } });
+          if (colors.length !== colorIds.length) {
+            return res.status(400).json({
+              success: false,
+              message: "Invalid color IDs. Some colors do not exist in the database.",
+            });
+          }
         }
       }
 
@@ -207,27 +254,41 @@ async function insertPhysicalProduct(req, res) {
         type: false,
       });
 
-      // Handle product sizes association
-      if (data.product_sizes && data.product_sizes.length > 0) {
-        const sizePromises = data.product_sizes.map((sizeId) => {
-          return SizeProduct.create({
+      // // Handle product sizes association
+      // if (data.product_sizes && data.product_sizes.length > 0) {
+      //   const sizePromises = data.product_sizes.map((sizeId) => {
+      //     return SizeProduct.create({
+      //       product_id: product.id,
+      //       size_id: sizeId,
+      //     });
+      //   });
+      //   await Promise.all(sizePromises);
+      // }
+
+      // // Handle product colors association
+      // if (data.product_colors && data.product_colors.length > 0) {
+      //   const colorPromises = data.product_colors.map((colorId) => {
+      //     return ColorProduct.create({
+      //       product_id: product.id,
+      //       color_id: colorId,
+      //     });
+      //   });
+      //   await Promise.all(colorPromises);
+      // }
+
+      // Handle product variants association
+      if (data.variants && data.variants.length > 0) {
+        const variantPromises = data.variants.map((variant) => {
+          return ProductVariant.create({
             product_id: product.id,
-            size_id: sizeId,
+            color_id: variant.color_id || null, // If color_id is not provided, default to null
+            size_id: variant.size_id || null,  // If size_id is not provided, default to null
+            quantity: variant.quantity || 0,   // Default quantity to 0 if not provided
           });
         });
-        await Promise.all(sizePromises);
+        await Promise.all(variantPromises);
       }
 
-      // Handle product colors association
-      if (data.product_colors && data.product_colors.length > 0) {
-        const colorPromises = data.product_colors.map((colorId) => {
-          return ColorProduct.create({
-            product_id: product.id,
-            color_id: colorId,
-          });
-        });
-        await Promise.all(colorPromises);
-      }
 
       // Handle product tags association
       if (data.product_tags_data && data.product_tags_data.length > 0) {
@@ -299,8 +360,9 @@ async function updatePhysicalProduct(req, res) {
     data.best_selling = data.best_selling === "true";
     data.on_sale = data.on_sale === "true";
     data.new_arrival = data.new_arrival === "true";
-    data.product_sizes = JSON.parse(data.product_sizes || "[]");
-    data.product_colors = JSON.parse(data.product_colors || "[]");
+    // data.product_sizes = JSON.parse(data.product_sizes || "[]");
+    // data.product_colors = JSON.parse(data.product_colors || "[]");
+    data.variants = JSON.parse(data.variants || "[]");
     data.product_tags_data = JSON.parse(data.product_tags_data || "[]");
 
     // Validate request body
@@ -351,26 +413,40 @@ async function updatePhysicalProduct(req, res) {
         new_arrival: data.new_arrival,
       });
 
-      // Update associated sizes
-      if (data.product_sizes.length === 0) {
-        await SizeProduct.destroy({ where: { product_id: productId } });
-      } else {
-        await SizeProduct.destroy({ where: { product_id: productId } });
-        const sizePromises = data.product_sizes.map((sizeId) =>
-          SizeProduct.create({ product_id: productId, size_id: sizeId })
-        );
-        await Promise.all(sizePromises);
-      }
+      // // Update associated sizes
+      // if (data.product_sizes.length === 0) {
+      //   await SizeProduct.destroy({ where: { product_id: productId } });
+      // } else {
+      //   await SizeProduct.destroy({ where: { product_id: productId } });
+      //   const sizePromises = data.product_sizes.map((sizeId) =>
+      //     SizeProduct.create({ product_id: productId, size_id: sizeId })
+      //   );
+      //   await Promise.all(sizePromises);
+      // }
 
-      // Update associated colors
-      if (data.product_colors.length === 0) {
-        await ColorProduct.destroy({ where: { product_id: productId } });
-      } else {
-        await ColorProduct.destroy({ where: { product_id: productId } });
-        const colorPromises = data.product_colors.map((colorId) =>
-          ColorProduct.create({ product_id: productId, color_id: colorId })
-        );
-        await Promise.all(colorPromises);
+      // // Update associated colors
+      // if (data.product_colors.length === 0) {
+      //   await ColorProduct.destroy({ where: { product_id: productId } });
+      // } else {
+      //   await ColorProduct.destroy({ where: { product_id: productId } });
+      //   const colorPromises = data.product_colors.map((colorId) =>
+      //     ColorProduct.create({ product_id: productId, color_id: colorId })
+      //   );
+      //   await Promise.all(colorPromises);
+      // }
+
+      // Handle product variants
+      await ProductVariant.destroy({ where: { product_id: productId } });
+      if (data.variants.length > 0) {
+        const variantPromises = data.variants.map((variant) => {
+          return ProductVariant.create({
+            product_id: productId,
+            color_id: variant.color_id || null,
+            size_id: variant.size_id || null,
+            quantity: variant.quantity || 0,
+          });
+        });
+        await Promise.all(variantPromises);
       }
 
       // Update associated tags
@@ -406,7 +482,6 @@ async function updatePhysicalProduct(req, res) {
   });
 }
 
-
 async function getPhysicalProductWithDetails(req, res) {
   const productId = parseInt(req.params.id, 10);
 
@@ -430,16 +505,18 @@ async function getPhysicalProductWithDetails(req, res) {
           attributes: ["id", "category_name", "category_slug"], // Match defined Category attributes
         },
         {
-          model: Size,
-          through: { attributes: [] }, // Exclude join table attributes
-          as: "sizes", // Use alias defined in association
-          attributes: ["id", "size"], // Match defined Size attributes
-        },
-        {
-          model: Color,
-          through: { attributes: [] }, // Exclude join table attributes
-          as: "colors", // Use alias defined in association
-          attributes: ["id", "name", "color_code"], // Match defined Color attributes
+          model: ProductVariant, // Include ProductVariant details
+          attributes: ["id", "quantity"], // Include variant-specific attributes
+          include: [
+            {
+              model: Size,
+              attributes: ["id", "size"], // Include size details for the variant
+            },
+            {
+              model: Color,
+              attributes: ["id", "name", "color_code"], // Include color details for the variant
+            },
+          ],
         },
         {
           model: ProductTag, // Now ProductTag is associated with Product
@@ -486,16 +563,18 @@ async function getAllPhysicalProducts(req, res) {
           attributes: ["id", "category_name", "category_slug"], // Match defined Category attributes
         },
         {
-          model: Size,
-          through: { attributes: [] }, // Exclude join table attributes
-          as: "sizes", // Use alias defined in association
-          attributes: ["id", "size"], // Match defined Size attributes
-        },
-        {
-          model: Color,
-          through: { attributes: [] }, // Exclude join table attributes
-          as: "colors", // Use alias defined in association
-          attributes: ["id", "name", "color_code"], // Match defined Color attributes
+          model: ProductVariant, // Include ProductVariant details
+          attributes: ["id", "quantity"], // Include variant-specific attributes
+          include: [
+            {
+              model: Size,
+              attributes: ["id", "size"], // Include size details for the variant
+            },
+            {
+              model: Color,
+              attributes: ["id", "name", "color_code"], // Include color details for the variant
+            },
+          ],
         },
         {
           model: ProductTag, // Now ProductTag is associated with Product
@@ -548,11 +627,14 @@ async function deletePhysicalProduct(req, res) {
       });
     }
 
-    // Delete related records in SizeProduct
-    await SizeProduct.destroy({ where: { product_id: productId } });
+    // // Delete related records in SizeProduct
+    // await SizeProduct.destroy({ where: { product_id: productId } });
 
-    // Delete related records in ColorProduct
-    await ColorProduct.destroy({ where: { product_id: productId } });
+    // // Delete related records in ColorProduct
+    // await ColorProduct.destroy({ where: { product_id: productId } });
+
+    // Delete related records in ProductVariant
+    await ProductVariant.destroy({ where: { product_id: productId } });
 
     // Delete related records in ProductTag
     await ProductTag.destroy({ where: { product_id: productId } });
@@ -1039,6 +1121,147 @@ async function getAllDigitalProducts(req, res) {
   }
 }
 
+// const getAllProducts = async (req, res) => {
+//   try {
+//     // Extract query parameters
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = parseInt(req.query.limit) || 12;
+//     const offset = (page - 1) * limit;
+
+//     const filters = {
+//       status: 1, // Only active products
+//       deletedAt: null, // Exclude soft-deleted products
+//     };
+
+//     // Extract additional filter parameters from the query
+//     if (req.query.search) {
+//       filters.product_name = {
+//         [Op.like]: `%${req.query.search}%`, // Search by product name
+//       };
+//     }
+
+//     if (req.query.category) {
+//       filters.category_id = req.query.category; // Filter by category
+//     }
+
+//     if (req.query.product_type !== undefined) {
+//       filters.type = req.query.product_type === '1' ? 1 : 0; // Filter by product type (0 = physical, 1 = digital)
+//     }
+
+//     if (req.query.minPrice && req.query.maxPrice) {
+//       filters.price = {
+//         [Op.between]: [parseFloat(req.query.minPrice), parseFloat(req.query.maxPrice)],
+//       };
+//     }
+
+//     if (req.query.featured_product !== undefined) {
+//       filters.featured_product = req.query.featured_product === 'true'; // Filter by featured products
+//     }
+
+//     if (req.query.best_selling !== undefined) {
+//       filters.best_selling = req.query.best_selling === 'true'; // Filter by best selling
+//     }
+
+//     if (req.query.on_sale !== undefined) {
+//       filters.on_sale = req.query.on_sale === 'true'; // Filter by on sale
+//     }
+
+//     if (req.query.new_arrival !== undefined) {
+//       filters.new_arrival = req.query.new_arrival === 'true'; // Filter by new arrival
+//     }
+
+//     // Fetch products and apply filters
+//     const products = await Product.findAll({
+//       where: filters,
+//       include: [
+//         {
+//           model: ProductVariant,
+//           required: req.query.colors || req.query.sizes ? true : false, // Include only if size or color filter is applied
+//           where: {
+//             ...(req.query.colors && {
+//               color_id: { [Op.in]: req.query.colors.split(',') }, // Filter by color ID
+//             }),
+//             ...(req.query.sizes && {
+//               size_id: { [Op.in]: req.query.sizes.split(',') }, // Filter by size ID
+//             }),
+//           },
+//           include: [
+//             {
+//               model: Size,
+//               attributes: ['id', 'size'],
+//             },
+//             {
+//               model: Color,
+//               attributes: ['id', 'name', 'color_code'],
+//             },
+//           ],
+//         },
+//         {
+//           model: Category,
+//           attributes: ['id', 'category_name'],
+//         },
+//         {
+//           model: Brand,
+//           attributes: ['id', 'brand_name'],
+//         },
+//         {
+//           model: ProductReview,
+//           attributes: ['rating'],
+//         },
+//       ],
+//       limit,
+//       offset,
+//       distinct: true,
+//     });
+
+//     // Calculate stock status and average rating for each product
+//     products.forEach((product) => {
+//       // Calculate stock status
+//       product.dataValues.stockStatus =
+//         product.quantity > 0 ? 'In Stock' : 'Out of Stock';
+
+//       // Calculate average rating
+//       const reviews = product.ProductReviews;
+//       if (reviews && reviews.length > 0) {
+//         const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
+//         const averageRating = totalRatings / reviews.length;
+//         product.dataValues.averageRating = averageRating.toFixed(1);
+//       } else {
+//         product.dataValues.averageRating = null;
+//       }
+//     });
+
+//     // If no products found
+//     if (products.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'No products found.',
+//       });
+//     }
+
+//     // Get total count of products for pagination
+//     const totalProducts = await Product.count({ where: filters });
+//     const totalPages = Math.ceil(totalProducts / limit);
+
+//     // Return paginated products
+//     return res.status(200).json({
+//       success: true,
+//       message: 'Products retrieved successfully.',
+//       products,
+//       totalProducts,
+//       totalPages,
+//       currentPage: page,
+//     });
+//   } catch (error) {
+//     console.error('Error retrieving products:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Error retrieving products.',
+//       error: error.message || 'An unexpected error occurred.',
+//     });
+//   }
+// };
+
 const getAllProducts = async (req, res) => {
   try {
     // Extract query parameters
@@ -1064,24 +1287,12 @@ const getAllProducts = async (req, res) => {
 
     if (req.query.product_type !== undefined) {
       filters.type = req.query.product_type === '1' ? 1 : 0; // Filter by product type (0 = physical, 1 = digital)
-    }    
+    }
 
     if (req.query.minPrice && req.query.maxPrice) {
       filters.price = {
         [Op.between]: [parseFloat(req.query.minPrice), parseFloat(req.query.maxPrice)],
       };
-    }
-
-    if (req.query.colors) {
-      filters['$Colors.id$'] = { [Op.in]: req.query.colors.split(',') }; // Filter by colors
-    }
-
-    if (req.query.sizes) {
-      filters['$Sizes.id$'] = { [Op.in]: req.query.sizes.split(',') }; // Filter by sizes
-    }
-
-    if (req.query.brands) {
-      filters.brand_id = { [Op.in]: req.query.brands.split(',') }; // Filter by brands
     }
 
     if (req.query.featured_product !== undefined) {
@@ -1100,42 +1311,32 @@ const getAllProducts = async (req, res) => {
       filters.new_arrival = req.query.new_arrival === 'true'; // Filter by new arrival
     }
 
-    if (req.query.product_type) {
-      filters.type = req.query.product_type; // Filter by product type
-    }
-
-    if (req.query.averageRating) {
-      filters['$ProductReviews.rating$'] = {
-        [Op.gte]: parseFloat(req.query.averageRating), // Filter by average rating
-      };
-    }
-
-    // Get total products count (for pagination)
-    const totalProducts = await Product.count({
-      where: filters,
-      include: [
-        {
-          model: ProductReview,
-          required: false, // Allow products without reviews
-        },
-      ],
-    });
-
-    // Calculate total pages
-    const totalPages = Math.ceil(totalProducts / limit);
-
-    // Define sorting based on query
-    let order = [];
-    if (req.query.sortBy) {
-      const sortBy = req.query.sortBy; // e.g., 'price', 'rating'
-      const sortOrder = req.query.sortOrder === 'asc' ? 'ASC' : 'DESC';
-      order.push([sortBy, sortOrder]);
-    }
-
-    // Fetch paginated products with filtering and sorting
+    // Fetch filtered products and apply filters
     const products = await Product.findAll({
       where: filters,
       include: [
+        {
+          model: ProductVariant,
+          required: req.query.colors || req.query.sizes ? true : false, // Include only if size or color filter is applied
+          where: {
+            ...(req.query.colors && {
+              color_id: { [Op.in]: req.query.colors.split(',') }, // Filter by color ID
+            }),
+            ...(req.query.sizes && {
+              size_id: { [Op.in]: req.query.sizes.split(',') }, // Filter by size ID
+            }),
+          },
+          include: [
+            {
+              model: Size,
+              attributes: ['id', 'size'],
+            },
+            {
+              model: Color,
+              attributes: ['id', 'name', 'color_code'],
+            },
+          ],
+        },
         {
           model: Category,
           attributes: ['id', 'category_name'],
@@ -1145,34 +1346,22 @@ const getAllProducts = async (req, res) => {
           attributes: ['id', 'brand_name'],
         },
         {
-          model: Size,
-          through: { attributes: [] },
-          as: 'sizes',
-          attributes: ['id', 'size'],
-        },
-        {
-          model: Color,
-          through: { attributes: [] },
-          as: 'colors',
-          attributes: ['id', 'name', 'color_code'],
-        },
-        {
-          model: ProductTag,
-          attributes: ['id', 'tag'],
-        },
-        {
           model: ProductReview,
           attributes: ['rating'],
         },
       ],
       limit,
       offset,
-      paranoid: true,
-      order, // Apply sorting
+      distinct: true,
     });
 
-    // Calculate the average rating for each product
-    products.forEach(product => {
+    // Calculate stock status and average rating for each product
+    products.forEach((product) => {
+      // Calculate stock status
+      product.dataValues.stockStatus =
+        product.quantity > 0 ? 'In Stock' : 'Out of Stock';
+
+      // Calculate average rating
       const reviews = product.ProductReviews;
       if (reviews && reviews.length > 0) {
         const totalRatings = reviews.reduce((sum, review) => sum + review.rating, 0);
@@ -1191,12 +1380,38 @@ const getAllProducts = async (req, res) => {
       });
     }
 
-    // Return paginated products with total count
+    // Get the total count of all products in the database (without any filters)
+    const totalProductCount = await Product.count({
+      where: { deletedAt: null, status: 1 }, // Only count products that are not soft-deleted
+    });
+
+    // Get the total count of filtered products for pagination (applying all filters)
+    const filteredProductsCount = await Product.count({
+      where: filters, // Apply the same filters here
+      include: [
+        {
+          model: ProductVariant,
+          where: {
+            ...(req.query.colors && {
+              color_id: { [Op.in]: req.query.colors.split(',') }, // Filter by color ID
+            }),
+            ...(req.query.sizes && {
+              size_id: { [Op.in]: req.query.sizes.split(',') }, // Filter by size ID
+            }),
+          },
+        },
+      ],
+    });
+
+    const totalPages = Math.ceil(filteredProductsCount / limit);
+
+    // Return paginated products along with total product counts
     return res.status(200).json({
       success: true,
       message: 'Products retrieved successfully.',
       products,
-      totalProducts,
+      totalProducts: totalProductCount, // Total product count (without filters)
+      filteredProducts: filteredProductsCount, // Filtered product count (with filters)
       totalPages,
       currentPage: page,
     });
