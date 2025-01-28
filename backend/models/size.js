@@ -37,9 +37,39 @@ module.exports = (sequelize, DataTypes) => {
       paranoid: true,
       hooks: {
         beforeDestroy: async (size, options) => {
-          await sequelize.models.SizeProduct.destroy({
-            where: { size_id: size.id },
-          });
+          const { ProductVariant, Product } = sequelize.models;
+
+          // Start a transaction
+          const transaction = await sequelize.transaction();
+          try {
+            // Find all product variants using this size
+            const variants = await ProductVariant.findAll({
+              where: { size_id: size.id },
+              transaction,
+            });
+
+            // Update product quantities
+            for (const variant of variants) {
+              const product = await Product.findByPk(variant.product_id, { transaction });
+              if (product) {
+                product.quantity -= variant.quantity; // Deduct variant quantity from product
+                await product.save({ transaction });
+              }
+            }
+
+            // Delete the related product variants
+            await ProductVariant.destroy({
+              where: { size_id: size.id },
+              transaction,
+            });
+
+            // Commit the transaction
+            await transaction.commit();
+          } catch (error) {
+            // Rollback the transaction in case of an error
+            await transaction.rollback();
+            throw error;
+          }
         },
       },
     }
