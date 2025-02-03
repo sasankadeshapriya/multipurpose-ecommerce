@@ -57,6 +57,7 @@ const billingRoute = require("./routes/billing.route");
 const currencyRoute = require("./routes/currency.route");
 const orderRoute = require("./routes/order.route");
 const deliveryChargeRoute = require("./routes/deliverycharge.route");
+const taxRoute = require("./routes/tax.route");
 
 //Routes List
 app.use("/api/images", imageRoute);
@@ -82,6 +83,7 @@ app.use("/api/billing", billingRoute);
 app.use("/api/currency", currencyRoute);
 app.use("/api/order", orderRoute);
 app.use("/api/delivery-charge", deliveryChargeRoute);
+app.use("/api/tax", taxRoute);
 
 app.get("/unauthorized", (req, res) => {
   res
