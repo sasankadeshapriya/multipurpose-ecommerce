@@ -115,11 +115,28 @@ async function insertPhysicalProduct(req, res) {
     data.new_arrival = data.new_arrival === "true";
     // data.product_sizes = JSON.parse(data.product_sizes || "[]");
     // data.product_colors = JSON.parse(data.product_colors || "[]");
-    data.variants = JSON.parse(data.variants || "[]");
+    // data.variants = JSON.parse(data.variants || "[]");
+
+    // Updated parsing for variants
+    try {
+      data.variants = JSON.parse(data.variants || "[]");
+
+      // Ensure variants is always an array (Fix for single variant entry issue)
+      if (!Array.isArray(data.variants)) {
+        data.variants = [data.variants];
+      }
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid format for variants. Must be a valid JSON array.",
+      });
+    }
+
     data.product_tags_data = JSON.parse(data.product_tags_data || "[]");
 
     // Validate request body
     const validationResponse = v.validate(data, productSchema);
+
     if (validationResponse !== true) {
       return res.status(400).json({
         success: false,
